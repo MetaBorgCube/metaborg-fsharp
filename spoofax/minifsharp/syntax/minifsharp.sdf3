@@ -2,12 +2,88 @@ module minifsharp
 
 imports
   
-  Common
+	common
+
+lexical syntax
+
+	Identifier					= [a-zA-Z] [a-zA-Z0-9]* 
+	TypeConstIdentifier			= [A-Z] [a-zA-Z0-9]* 
+	Integer						= [0-9]+
+
+lexical syntax start-symbols
+
+	Identifier
+	TypeConstIdentifier
+	Integer
 
 context-free start-symbols
-  
-  Start
+
+	Program
 
 context-free syntax
   
-  Start.Empty = <>
+	Program.Program				= <<Expression*> "[\<EntryPoint\>]" <Expression+>>
+	
+	Expression.Let				= <let <FunctionDefinition>>
+	Expression.LetRec			= <let rec <FunctionDefinition>>
+	Expression.Match			= <match <Expression> with <Rules>>
+	Expression.Print			= <printf <Expression>>
+	Expression.TypeDefinition	= <type <Identifier> = <TypeDefinition>>
+	Expression.Const			= <<Const>>
+	Expression.Identifier		= <<Identifier>>
+	Expression.Encapsulation	= <(<Expression>)>
+	Expression.Application		= <<Expression> <Expression>>
+	Expression.BinaryOperation	= <<Expression> <BinaryOperand> <Expression>>
+	Expression.UnaryOperation	= <<UnaryOperand> <Expression>>
+	Expression.Tuple			= <{<Expression> ,}+>
+	Expression.List				= <[<{Expression ";"}*>]>
+	
+	FunctionDefinition.Function	= <<Identifier> <Arguments> <ReturnType?> = <Expression>>
+
+	Const.Integer				= <<Integer>>
+	Const.Bool					= <<Boolean>>
+	
+	Boolean.True				= <true>
+	Boolean.False				= <false>
+	
+	BinaryOperand.Plus			= <+>
+	BinaryOperand.Min			= <->
+	BinaryOperand.Mult			= <*>
+	BinaryOperand.Concat		= <::>
+	BinaryOperand.And			= <&&>
+	BinaryOperand.Or			= <||>
+
+	UnaryOperand.Min			= <->
+	UnaryOperand.Negation		= <!>
+	
+	ReturnType					= <<Type>>
+	
+	Arguments.Arguments			= <[<{Argument ","}*>]>
+	Argument.Identifier			= <<Identifier>>
+	Argument.TypedIdentifier	= <( <Identifier> : <Type> )>
+	
+	Rules.Rules					= <"|"? {<Rule> "|"}*>
+	
+	Rule.Rule					= <<Pattern> -\> <Expression>>
+	
+	TypeDefinition.Type			= <"|"? {<Type> "|"}*>
+	
+	Type.Integer				= <int>
+	Type.Boolean				= <bool>
+	Type.Identifier				= <<Identifier>>
+	Type.TypeIdentifier			= <<TypeConstIdentifier>>
+	Type.List					= <<Type> list>
+	Type.TypedIdentifier		= <<Identifier> of <Type>>
+	Type.Tuple					= <{Type *}+>
+	
+	Pattern.Wildcard			= <_>
+	Pattern.Concat				= <<Pattern> :: <Pattern>>
+	Pattern.List				= <<ListPattern>>
+	Pattern.Or					= <<Pattern> | <Pattern>>
+	Pattern.Tuple				= <<Pattern> , <Pattern>>
+	Pattern.Encapsulation		= <(<Pattern>)>
+	Pattern.TypeConst			= <<TypeConstIdentifier> <Const?>>
+	Pattern.TypeConstIdentifier	= <<TypeConstIdentifier> <Identifier?>>
+	
+	ListPattern.ListPattern		= <[<{Pattern ";"}*>]>
+	
