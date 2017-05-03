@@ -2,7 +2,7 @@ module minifsharp
 
 imports
   
-	common
+	Common
 
 lexical syntax
 
