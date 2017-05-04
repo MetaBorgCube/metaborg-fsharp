@@ -40,7 +40,7 @@ context-free start-symbols
 
 context-free syntax
   
-	Program.Program				= <<Expression*> EntryPoint <Expression+>>
+	Program.Program				= <<Expression*> EntryPoint <Expression>>
 	
 	Expression.Let				= <let <FunctionDefinition>>
 	Expression.LetRec			= <let rec <FunctionDefinition>>
