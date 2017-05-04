@@ -80,11 +80,13 @@ context-free syntax
 	Argument.Identifier			= <<Identifier>>
 	Argument.TypedIdentifier	= <( <Identifier> : <Type> )>
 	
-	Rules.Rules					= <{$}? <{Rule "$"}*>>
+	Rules.RulesEscaped			= <<{Rule "|"}*>>
+	Rules.Rules					= <| <{Rule "|"}*>>
 	
-	Rule.Rule					= <<Pattern> % <Expression>>
+	Rule.Rule					= <<Pattern> -\> <Expression>>
 	
-	TypeDefinition.Type			= <{$}? <{Type "$"}*>>
+	TypeDefinition.TypeEscaped	= <<{Type "|"}*>>
+	TypeDefinition.Type			= <| <{Type "|"}*>>
 	
 	Type.Integer				= <int>
 	Type.Boolean				= <bool>
