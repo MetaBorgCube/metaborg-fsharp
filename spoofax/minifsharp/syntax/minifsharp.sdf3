@@ -49,7 +49,7 @@ context-free syntax
 	Expression.TypeDefinition	= <type <Identifier> = <TypeDefinition>>
 	Expression.Const			= <<Const>>
 	Expression.Identifier		= <<Identifier>>
-	Expression.Application		= <<Expression> <Expression>>
+	Expression.Application		= <<Expression> <Expression>> {left}
 	Expression.Tuple			= <<Expression> , <{Expression ","}+>>
 	Expression.List				= <[<{Expression ";"}*>]>
 	Expression.Plus				= <<Expression> + <Expression>>

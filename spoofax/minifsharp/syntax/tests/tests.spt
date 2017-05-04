@@ -146,5 +146,51 @@ test braces [[
 	(1+1)*2
 	EntryPoint
 	let x = 5
-]] parse succeeds      
-  
+]] parse succeeds
+
+test braces2 [[
+	EntryPoint
+	1*2+3   
+]] parse to minifsharp [[ 
+	EntryPoint
+	(1*2)+3
+]] 
+
+test braces3 [[ 
+	EntryPoint
+	f g 0
+]] parse to minifsharp [[ 
+	EntryPoint
+	(f g) 0
+]]  
+
+test braces4 [[ 
+	EntryPoint
+	a -b
+]] parse to minifsharp [[ 
+	EntryPoint
+	a (-b)
+]]
+
+test braces5 [[ 
+	EntryPoint
+	a-b
+]] parse to minifsharp [[ 
+	EntryPoint
+	(a - b)
+]]  
+
+// disabled since they don't really need to parse to the same output;
+// we can desugar it later
+//test pattern matching optioinal leading bar [[ 
+//	EntryPoint
+//	match a with b -> true
+//]] parse to minifsharp [[ 
+//	EntryPoint
+//	match a with |b -> true
+//]]   
+
+
+
+
+
