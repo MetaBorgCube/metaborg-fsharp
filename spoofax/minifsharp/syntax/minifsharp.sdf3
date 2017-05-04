@@ -49,12 +49,12 @@ context-free syntax
 	Expression.TypeDefinition	= <type <Identifier> = <TypeDefinition>>
 	Expression.Const			= <<Const>>
 	Expression.Identifier		= <<Identifier>>
-	Expression.Encapsulation	= <(<Expression>)>
 	Expression.Application		= <<Expression> <Expression>>
 	Expression.BinaryOperation	= <<Expression> <BinaryOperand> <Expression>>
 	Expression.UnaryOperation	= <<UnaryOperand> <Expression>>
 	Expression.Tuple			= <<Expression> , <{Expression ","}+>>
 	Expression.List				= <[<{Expression ";"}*>]>
+	Expression					= <(<Expression>)>											{bracket}
 	
 	FunctionDefinition.Function	= <<Identifier> <Arguments?> <ReturnType?> = <Expression>>
 
@@ -95,18 +95,18 @@ context-free syntax
 	Type.List					= <<Type> list>
 	Type.TypedIdentifier		= <<Identifier> of <Type>>
 	Type.Tuple					= <<Type> * <{Type "*"}+>>
-	Type.Encapsulation			= <(<Type>)>
+	Type						= <(<Type>)>												{bracket}
 	
 	Pattern.Wildcard			= <_>
 	Pattern.Concat				= <<Pattern> :: <Pattern>>
 	Pattern.List				= <<ListPattern>>
 	Pattern.Or					= <<Pattern> $ <Pattern>>
 	Pattern.Tuple				= <<Pattern> , <Pattern>>
-	Pattern.Encapsulation		= <(<Pattern>)>
 	Pattern.TypeConst			= <<TypeConstIdentifier> <Const?>>
 	Pattern.TypeConstIdentifier	= <<TypeConstIdentifier> <Identifier?>>
 	Pattern.Const				= <<Const>>
 	Pattern.Identifier			= <<Identifier>>
+	Pattern						= <(<Pattern>)>												{bracket}
 	
 	ListPattern.ListPattern		= <[<{Pattern ";"}*>]>
 	
