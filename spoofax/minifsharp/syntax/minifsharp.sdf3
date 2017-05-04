@@ -42,8 +42,8 @@ context-free syntax
   
 	Program.Program				= <<Expression*> EntryPoint <Expression>>
 	
-	Expression.Let				= <let <FunctionDefinition>>
-	Expression.LetRec			= <let rec <FunctionDefinition>>
+	Expression.Let				= <let <Identifier> <Arguments?> <ReturnType?> = <Expression+>> {layout(gt(col(first(5)),col(first(1)))), layout(gt(col(first(6)),col(first(1))))}
+	Expression.LetRec			= <let rec <Identifier> <Arguments?> <ReturnType?> = <Expression+>> {layout(gt(col(first(6)),col(first(1)))), layout(gt(col(first(7)),col(first(1))))}
 	Expression.Match			= <match <Expression> with <Rules>>
 	Expression.Print			= <printf <Expression>>
 	Expression.TypeDefinition	= <type <Identifier> = <TypeDefinition>>
@@ -62,8 +62,6 @@ context-free syntax
 	Expression.Not				= <! <Expression>>
 	Expression					= <(<Expression>)>											{bracket}
 	
-	FunctionDefinition.Function	= <<Identifier> <Arguments?> <ReturnType?> = <Expression>>
-
 	Const.Integer				= <<Integer>>
 	Const.Bool					= <<Boolean>>
 	

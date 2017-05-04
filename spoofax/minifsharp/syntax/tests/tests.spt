@@ -190,7 +190,43 @@ test braces5 [[
 //	match a with |b -> true
 //]]   
 
+test FunctionDefinition incorrect [[
+EntryPoint
+let b 
+= true
+]] parse fails
 
+test FunctionDefinition correct 1 [[
+EntryPoint
+let b
+	= true
+]] parse succeeds
 
+test FunctionDefinition correct 2 [[
+EntryPoint
+let b = true
+]] parse succeeds
 
+test FunctionDefinition correct 3 [[
+EntryPoint
+let c = 
+    let d =
+     true
+    true
+]] parse succeeds
 
+test FunctionDefinition nested correct [[
+EntryPoint
+let c = 
+    let d =
+     true
+    true
+]] parse succeeds
+
+test FunctionDefinition nested incorrect [[
+EntryPoint
+let c = 
+    let d =
+    true
+    true
+]] parse fails
