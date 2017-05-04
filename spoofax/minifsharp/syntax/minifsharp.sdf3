@@ -58,8 +58,8 @@ context-free syntax
 	Expression.Concat			= <<Expression> :: <Expression>>
 	Expression.And				= <<Expression> && <Expression>>
 	Expression.Or				= <<Expression> || <Expression>>
-	Expression.Min				= <- <Expression>>
-	Expression.Negation			= <! <Expression>>
+	Expression.Negative			= <-<Expression>>
+	Expression.Not				= <! <Expression>>
 	Expression					= <(<Expression>)>											{bracket}
 	
 	FunctionDefinition.Function	= <<Identifier> <Arguments?> <ReturnType?> = <Expression>>
@@ -76,8 +76,8 @@ context-free syntax
 	Argument.Identifier			= <<Identifier>>
 	Argument.TypedIdentifier	= <( <Identifier> : <Type> )>
 	
-	Rules.RulesEscaped			= <<{Rule "|"}*>>
-	Rules.Rules					= <| <{Rule "|"}*>>
+	Rules.RulesEscaped			= <<{Rule "|"}+>>
+	Rules.Rules					= <| <{Rule "|"}+>>
 	
 	Rule.Rule					= <<Pattern> -\> <Expression>>
 	
@@ -105,4 +105,18 @@ context-free syntax
 	Pattern						= <(<Pattern>)>												{bracket}
 	
 	ListPattern.ListPattern		= <[<{Pattern ";"}*>]>
+	
+context-free priorities
+  { left:
+    Expression.Plus
+	Expression.Min
+	Expression.Mult
+	Expression.Concat
+	Expression.And
+	Expression.Or
+  } > { left:
+	Expression.Negative
+	Expression.Not
+  }
+	
 	
