@@ -50,10 +50,16 @@ context-free syntax
 	Expression.Const			= <<Const>>
 	Expression.Identifier		= <<Identifier>>
 	Expression.Application		= <<Expression> <Expression>>
-	Expression.BinaryOperation	= <<Expression> <BinaryOperand> <Expression>>
-	Expression.UnaryOperation	= <<UnaryOperand> <Expression>>
 	Expression.Tuple			= <<Expression> , <{Expression ","}+>>
 	Expression.List				= <[<{Expression ";"}*>]>
+	Expression.Plus				= <<Expression> + <Expression>>
+	Expression.Min				= <<Expression> - <Expression>>
+	Expression.Mult				= <<Expression> * <Expression>>
+	Expression.Concat			= <<Expression> :: <Expression>>
+	Expression.And				= <<Expression> && <Expression>>
+	Expression.Or				= <<Expression> || <Expression>>
+	Expression.Min				= <- <Expression>>
+	Expression.Negation			= <! <Expression>>
 	Expression					= <(<Expression>)>											{bracket}
 	
 	FunctionDefinition.Function	= <<Identifier> <Arguments?> <ReturnType?> = <Expression>>
@@ -63,16 +69,6 @@ context-free syntax
 	
 	Boolean.True				= <true>
 	Boolean.False				= <false>
-	
-	BinaryOperand.Plus			= <+>
-	BinaryOperand.Min			= <->
-	BinaryOperand.Mult			= <*>
-	BinaryOperand.Concat		= <::>
-	BinaryOperand.And			= <&&>
-	BinaryOperand.Or			= <||>
-
-	UnaryOperand.Min			= <->
-	UnaryOperand.Negation		= <!>
 	
 	ReturnType.ReturnType		= <: <Type>>
 	
