@@ -44,11 +44,13 @@ context-free syntax
 	Program.Program				= <<ExprBlock?> [\<EntryPoint\>] <Let>>
 	
 	Expression.Let				= <<Let>>
-	Expression.Match			= <match <Expression> with <Rules>>
+	Expression.Match			= <match <Expression> with <Rules>>									{layout(and(and(	gt(col(first(2)),col(first(1))), 
+																	 													gt(col(first(3)),col(first(1))))),
+																	 													gt(col(first(4)),col(first(1))))}
 	Expression.Print			= <printf <Expression>>
-	Expression.TypeDefinition	= <type <Identifier> = <TypeDefinition>>							{layout(and(and(	ge(col(first(2)),col(first(1))), 
-																	 													ge(col(first(3)),col(first(1))))),
-																	 													ge(col(first(4)),col(first(1))))}
+	Expression.TypeDefinition	= <type <Identifier> = <TypeDefinition>>							{layout(and(and(	gt(col(first(2)),col(first(1))), 
+																	 													gt(col(first(3)),col(first(1))))),
+																	 													gt(col(first(4)),col(first(1))))}
 	Expression.Const			= <<Const>>
 	Expression.Identifier		= <<Identifier>>
 	Expression.Application		= <<Expression> <Expression>> 										{layout(			gt(col(first(2)),col(first(1))))}	// second Expression must be on a righter column than first Expression
