@@ -247,4 +247,10 @@ test binop on different lines incorrect [[
 let c = 
     1 +
 2
-]] parse fails
+]] parse to minifsharp [[
+[<EntryPoint>]
+let c = 
+    1 + 2
+]]
+
+
