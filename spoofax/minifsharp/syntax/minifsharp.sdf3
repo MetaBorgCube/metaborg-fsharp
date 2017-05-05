@@ -73,7 +73,7 @@ context-free syntax
 	
 	ReturnType.ReturnType		= <: <Type>>
 	
-	Arguments.Arguments			= <<Argument*>>
+	Arguments.Arguments			= <<Argument+>>
 	Argument.Identifier			= <<Identifier>>
 	Argument.TypedIdentifier	= <( <Identifier> : <Type> )>
 	
