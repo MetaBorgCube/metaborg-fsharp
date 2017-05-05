@@ -49,7 +49,7 @@ context-free syntax
 	Expression.TypeDefinition	= <type <Identifier> = <TypeDefinition>>
 	Expression.Const			= <<Const>>
 	Expression.Identifier		= <<Identifier>>
-	Expression.Application		= <<Expression> <Expression>> {layout(gt(col(first(2)),col(first(1))))}
+	Expression.Application		= <<Expression> <Expression>> 										{layout(		gt(col(first(2)),col(first(1))))}	// second Expression must be on a righter column than first Expression
 	Expression.Tuple			= <<Expression> , <{Expression ","}+>>
 	Expression.List				= <[<{Expression ";"}*>]>
 	Expression.Plus				= <<Expression> + <Expression>>
@@ -60,12 +60,14 @@ context-free syntax
 	Expression.Or				= <<Expression> || <Expression>>
 	Expression.Negative			= <-<Expression>>
 	Expression.Not				= <! <Expression>>
-	Expression					= <(<Expression>)>											{bracket}
+	Expression					= <(<Expression>)>													{bracket}
 	
-	Let.Let						= <let <Identifier> <Arguments?> <ReturnType?> = <ExprBlock>> {layout(and(gt(col(first(5)),col(first(1))), gt(col(first(6)),col(first(1)))))}
-	Let.LetRec					= <let rec <Identifier> <Arguments?> <ReturnType?> = <ExprBlock>> {layout(and(gt(col(first(6)),col(first(1))), gt(col(first(7)),col(first(1)))))}
+	Let.Let						= <let <Identifier> <Arguments?> <ReturnType?> = <ExprBlock>> 		{layout(and(	gt(col(first(5)),col(first(1))), 	// "=" must be on a a righter column than let
+																													gt(col(first(6)),col(first(1)))))}	// ExprBlock must be on a a righter column than let
+	Let.LetRec					= <let rec <Identifier> <Arguments?> <ReturnType?> = <ExprBlock>> 	{layout(and(	gt(col(first(6)),col(first(1))), 	// "=" must be on a righter column than let
+																													gt(col(first(7)),col(first(1)))))}	// ExprBlock must be on a righter column than let
 	
-	ExprBlock   = <<ExprNewline> <ExprNewline*>> {layout(eq(col(first(1)),col(first(2))))}
+	ExprBlock.ExprBlock   		= <<ExprNewline> <ExprNewline*>> 									{layout(eq(		col(first(1)),col(first(2))))}		// all Expressions must be on the same column
 	
 	Const.Integer				= <<Integer>>
 	Const.Bool					= <<Boolean>>
@@ -94,7 +96,7 @@ context-free syntax
 	Type.List					= <<Type> list>
 	Type.TypedIdentifier		= <<Identifier> of <Type>>
 	Type.Tuple					= <<Type> * <{Type "*"}+>>
-	Type						= <(<Type>)>												{bracket}
+	Type						= <(<Type>)>														{bracket}
 	
 	Pattern.Wildcard			= <_>
 	Pattern.Concat				= <<Pattern> :: <Pattern>>
@@ -105,7 +107,7 @@ context-free syntax
 	Pattern.TypeConstIdentifier	= <<TypeConstIdentifier> <Identifier?>>
 	Pattern.Const				= <<Const>>
 	Pattern.Identifier			= <<Identifier>>
-	Pattern						= <(<Pattern>)>												{bracket}
+	Pattern						= <(<Pattern>)>														{bracket}
 	
 	ListPattern.ListPattern		= <[<{Pattern ";"}*>]>
 	
