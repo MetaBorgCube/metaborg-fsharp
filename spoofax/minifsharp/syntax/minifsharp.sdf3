@@ -67,7 +67,7 @@ context-free syntax
 	Let.LetRec					= <let rec <Identifier> <Arguments?> <ReturnType?> = <ExprBlock>> 	{layout(and(		gt(col(first(6)),col(first(1))), 	// "=" must be on a righter column than let
 																														gt(col(first(7)),col(first(1)))))}	// ExprBlock must be on a righter column than let
 	
-	ExprBlock.ExprBlock   		= <<ExprNewline> <ExprNewline*>> 									{layout(eq(			col(first(1)),col(first(2))))}		// all Expressions must be on the same column
+	ExprBlock.ExprBlock   		= <<ExprNewline> <ExprBlock?>> 										{layout(eq(			col(first(1)),col(first(2))))}		// all Expressions must be on the same column
 	
 	Const.Integer				= <<Integer>>
 	Const.Bool					= <<Boolean>>
