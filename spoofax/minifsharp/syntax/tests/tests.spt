@@ -9,17 +9,17 @@ test main no statement [[
 ]] parse fails
 
 test incomplete function [[
-	EntryPoint
+	[<EntryPoint>]
 	let a
 ]] parse fails    
 
 test incomplete recursive funtion [[
-	EntryPoint
+	[<EntryPoint>]
 	let rec a
 ]] parse fails    
 
 test incomplete match [[ 
-	EntryPoint
+	[<EntryPoint>]
 	match 0 with 
 ]] parse fails  
 
@@ -30,185 +30,185 @@ test no entrypoint [[
 
 test binop [[
 	1+1 
-	EntryPoint
+	[<EntryPoint>]
 	let x = 5
 ]] parse succeeds   
 
 test binop with space [[
 	1 * 1 
-	EntryPoint
+	[<EntryPoint>]
 	let x = 5
 ]] parse succeeds
 
 test minus [[
 	1 - 1 
-	EntryPoint
+	[<EntryPoint>]
 	let x = 5
 ]] parse succeeds  
 
 test unop [[
 	!true 
-	EntryPoint
+	[<EntryPoint>]
 	let x = 5
 ]] parse succeeds     
 
 test pattern matching: default; no leading bar [[
 	match 0 with _ -> true
-	EntryPoint
+	[<EntryPoint>]
 	let x = 5
 ]] parse succeeds    
 
 test pattern matching: default with leading bar [[
 	match 0 with | _ -> true
-	EntryPoint
+	[<EntryPoint>]
 	let x = 5
 ]] parse succeeds    
 
 test pattern matching: match of variable [[
 	match a with | _ -> true
-	EntryPoint
+	[<EntryPoint>]
 	let x = 5
 ]] parse succeeds    
 
 test pattern matching: match with const [[
 	match a with | 0 -> true
-	EntryPoint
+	[<EntryPoint>]
 	let x = 5
 ]] parse succeeds    
 
 test pattern matching: match with list [[
 	match a with | [1;2;3] -> true
-	EntryPoint
+	[<EntryPoint>]
 	let x = 5
 ]] parse succeeds    
 
 test pattern matching: match in var [[
 	match a with | x -> true
-	EntryPoint
+	[<EntryPoint>]
 	let x = 5
 ]] parse succeeds    
 
 test pattern matching: match with list [[
 	match a with | hd :: tl -> true
-	EntryPoint
+	[<EntryPoint>]
 	let x = 5
 ]] parse succeeds    
 
 test pattern matching: match with longer list [[
 	match a with | hd :: neck :: tl -> true
-	EntryPoint
+	[<EntryPoint>]
 	let x = 5
 ]] parse succeeds    
 
 test pattern matching: match with simple tuple [[
 	match a with | (1,2) -> true
-	EntryPoint
+	[<EntryPoint>]
 	let x = 5
 ]] parse succeeds    
 
 test pattern matching: match with complex tuple [[
 	match a with | (1,true,1::2, [1,2], (1,2,3)) -> true
-	EntryPoint
+	[<EntryPoint>]
 	let x = 5
 ]] parse succeeds    
 
 test typedefinition:  no leading bar [[
 	type newType = C | A
-	EntryPoint
+	[<EntryPoint>]
 	let x = 5
 ]] parse succeeds   
 
 test typedefinition: leading bar [[
 	type newType = | C | A
-	EntryPoint
+	[<EntryPoint>]
 	let x = 5
 ]] parse succeeds    
 
 test typedefinition: specify constructor type [[
 	type newType = C | A of int
-	EntryPoint
+	[<EntryPoint>]
 	let x = 5
 ]] parse succeeds   
 
 test typedefinition: int list type [[
 	type newType = C | A of int list
-	EntryPoint
+	[<EntryPoint>]
 	let x = 5
 ]] parse succeeds   
 
 test typedefinition: tuple type [[
 	type newType = C | A of int * bool
-	EntryPoint
+	[<EntryPoint>]
 	let x = 5
 ]] parse succeeds
 
 test braces [[
 	(1+1)*2
-	EntryPoint
+	[<EntryPoint>]
 	let x = 5
 ]] parse succeeds
 
 test braces2 [[
-	EntryPoint
-	1*2+3   
+	[<EntryPoint>]
+	let x = 1*2+3   
 ]] parse to minifsharp [[ 
-	EntryPoint
-	(1*2)+3
+	[<EntryPoint>]
+	let x = (1*2)+3
 ]] 
 
 test braces3 [[ 
-	EntryPoint
-	f g 0
+	[<EntryPoint>]
+	let x = f g 0
 ]] parse to minifsharp [[ 
-	EntryPoint
-	(f g) 0
+	[<EntryPoint>]
+	let x = (f g) 0
 ]]  
 
 test braces4 [[ 
-	EntryPoint
-	a -b
+	[<EntryPoint>]
+	let x = a -b
 ]] parse to minifsharp [[ 
-	EntryPoint
-	a (-b)
+	[<EntryPoint>]
+	let x = a (-b)
 ]]
 
 test braces5 [[ 
-	EntryPoint
-	a-b
+	[<EntryPoint>]
+	let x = a-b
 ]] parse to minifsharp [[ 
-	EntryPoint
-	(a - b)
+	[<EntryPoint>]
+	let x = (a - b)
 ]]  
 
 // disabled since they don't really need to parse to the same output;
 // we can desugar it later
 //test pattern matching optioinal leading bar [[ 
-//	EntryPoint
+//	[<EntryPoint>]
 //	match a with b -> true
 //]] parse to minifsharp [[ 
-//	EntryPoint
+//	[<EntryPoint>]
 //	match a with |b -> true
 //]]   
 
 test FunctionDefinition incorrect [[
-EntryPoint
+[<EntryPoint>]
 let b 
 = true
 ]] parse fails
 
 test FunctionDefinition correct 1 [[
-EntryPoint
+[<EntryPoint>]
 let b
 	= true
 ]] parse succeeds
 
 test FunctionDefinition correct 2 [[
-EntryPoint
+[<EntryPoint>]
 let b = true
 ]] parse succeeds
 
 test FunctionDefinition correct 3 [[
-EntryPoint
+[<EntryPoint>]
 let c = 
     let d =
      true
@@ -216,7 +216,7 @@ let c =
 ]] parse succeeds
 
 test FunctionDefinition nested correct [[
-EntryPoint
+[<EntryPoint>]
 let c = 
     let d =
      true
@@ -224,7 +224,7 @@ let c =
 ]] parse succeeds
 
 test FunctionDefinition nested incorrect [[
-EntryPoint
+[<EntryPoint>]
 let c = 
     let d =
     true
