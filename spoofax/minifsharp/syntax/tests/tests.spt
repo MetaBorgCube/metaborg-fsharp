@@ -230,3 +230,21 @@ let c =
     true
     true
 ]] parse fails
+
+test binop on different lines [[
+[<EntryPoint>]
+let c = 
+    1 +
+    2
+]] parse to minifsharp [[
+[<EntryPoint>]
+let c = 
+    1 + 2
+]]
+
+test binop on different lines incorrect [[
+[<EntryPoint>]
+let c = 
+    1 +
+2
+]] parse fails
