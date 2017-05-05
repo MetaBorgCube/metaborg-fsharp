@@ -4,9 +4,59 @@ imports
 
   signatures/-
 
+signature
+
+  name resolution
+
+    labels
+      P I
+
+    order
+      D < I,
+      D < P,
+      I < P
+
+    well-formedness
+	  (P* . I*)
+
 rules
 
   init ^ (s) := new s.
 
-  [[ Program(_, _) ^ (s) ]] :=
+  [[ Program(expBlock, main) ^ (s) ]] :=
+	new s',
+  	s' -P-> s,
+  	[[ expBlock ^ (s) ]],
+  	[[ main ^ (s, s') ]],
+  	true.
+
+  [[ Some(block @ ExprBlock(_, _)) ^ (s) ]] :=
+  	[[ block ^ (s) ]].
+	
+  [[ ExprBlock(LetExp(x), next) ^ (s) ]] := 
+  	new s',
+  	s' -P-> s,
+	[[ x ^ (s, s') ]],
+	[[ next ^ (s') ]].
+	
+  [[ ExprBlock(exp, next) ^ (s) ]] := 
+	[[ exp ^ (s) ]],
+	[[ next ^ (s) ]].
+
+  [[ Let(id, args, retTy, body) ^ (s, s') ]] := 
+	Const{id} <- s',
+    [[ body ^ (s) ]].
+    
+  [[ LetRec(id, args, retTy, body) ^ (s, s') ]] := 
+	Const{id} <- s',
+    [[ body ^ (s') ]].
+
+  [[ Identifier(id) ^ (s) ]] :=
+  	Const{id} -> s, 
+  	Const{id} |-> d.
+  
+  [[ Const(v) ^ (s) ]] :=
+    true.
+  
+  [[ None() ^ (s) ]] :=
     true.
