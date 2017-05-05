@@ -158,23 +158,23 @@ test braces2 [[
 
 test braces3 [[ 
 	[<EntryPoint>]
-	let x = f g 0
+	let x = (f g 0)
 ]] parse to minifsharp [[ 
 	[<EntryPoint>]
-	let x = (f g) 0
+	let x = ((f g) 0)
 ]]  
 
 test braces4 [[ 
 	[<EntryPoint>]
-	let x = a -b
+	let x = (a -b)
 ]] parse to minifsharp [[ 
 	[<EntryPoint>]
-	let x = a (-b)
+	let x = (a (-b))
 ]]
 
 test braces5 [[ 
 	[<EntryPoint>]
-	let x = a-b
+	let x = (a-b)
 ]] parse to minifsharp [[ 
 	[<EntryPoint>]
 	let x = (a - b)

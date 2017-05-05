@@ -1,9 +1,4 @@
 Program(
-  [ amb(
-      [ [Application(Const(Bool(False())), Const(Bool(False())))]
-      , [Const(Bool(False())), Const(Bool(False()))]
-      ]
-    )
-  ]
-, Let(Function("x", None(), None(), Const(Bool(True()))))
+  []
+, Let("x", None(), None(), [Const(Bool(True()))])
 )
