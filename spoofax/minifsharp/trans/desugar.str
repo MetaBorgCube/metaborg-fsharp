@@ -1,5 +1,8 @@
 module desugar
 
+imports
+src-gen/signatures/minifsharp-sig
+
 signature
 	sorts Expression
 	constructors
@@ -14,6 +17,9 @@ signature
 	Or						: Exp * Exp -> Exp
 	
 	BinaryOperation			: BinaryOperand * Exp * Exp -> Exp
+	
+	TupleType				: List(Type) -> Type
+	TupleExp				: List(Expression) -> Expression
 	
 	PlusOp					: BinaryOperand
 	MinOp					: BinaryOperand
@@ -34,13 +40,17 @@ signature
 	
 rules
 
-	desugar: Plus(a, b)		-> BinaryOperation(PlusOp(), a, b)
-	desugar: Min(a, b)		-> BinaryOperation(MinOp(), a, b)
-	desugar: Mult(a, b)		-> BinaryOperation(MultOp(), a, b)
-	desugar: Concat(a, b)	-> BinaryOperation(ConcatOp(), a, b)
-	desugar: And(a, b)		-> BinaryOperation(AndOp(), a, b)
-	desugar: Or(a, b)		-> BinaryOperation(OrOp(), a, b)
+	desugar: Plus(a, b)				-> BinaryOperation(PlusOp(), a, b)
+	desugar: Min(a, b)				-> BinaryOperation(MinOp(), a, b)
+	desugar: Mult(a, b)				-> BinaryOperation(MultOp(), a, b)
+	desugar: Concat(a, b)			-> BinaryOperation(ConcatOp(), a, b)
+	desugar: And(a, b)				-> BinaryOperation(AndOp(), a, b)
+	desugar: Or(a, b)				-> BinaryOperation(OrOp(), a, b)
 	
-	desugar: Negative(a)	-> UnaryOperation(NegativeOp(), a)
-	desugar: Not(a)			-> UnaryOperation(NotOp(), a)
+	desugar: Negative(a)			-> UnaryOperation(NegativeOp(), a)
+	desugar: Not(a)					-> UnaryOperation(NotOp(), a)
+	
+	desugar: SugaredTupleType(a,b)	-> TupleType(<concat> [[a], b])
+	desugar: SugaredTupleExp(a,b)	-> TupleExp (<concat> [[a], b])
+
 	

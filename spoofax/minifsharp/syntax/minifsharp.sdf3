@@ -51,7 +51,7 @@ context-free syntax
 	Expression.Const			= <<Const>>
 	Expression.Identifier		= <<Identifier>>
 	Expression.Application		= <<Expression> <Expression>> 										{layout(			gt(col(first(2)),col(first(1))))}	// second Expression must be on a righter column than first Expression
-	Expression.Tuple			= <<Expression> , <{Expression ","}+>>
+	Expression.SugaredTupleExp	= <<Expression> , <{Expression ","}+>>
 	Expression.List				= <[<{Expression ";"}*>]>
 	Expression.Plus				= <<Expression> + <Expression>>										{layout(and(		ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
 																														ge(col(first(2)),sub(col(first(1)), num("2")))))} // + is allowed to be two columns to the left
@@ -105,9 +105,9 @@ context-free syntax
 	Type.Boolean				= <bool>
 	Type.Identifier				= <<Identifier>>
 	Type.TypeIdentifier			= <<TypeConstIdentifier>>
-	Type.List					= <<Type> list>
+	Type.ListType				= <<Type> list>
 	Type.TypedIdentifier		= <<TypeConstIdentifier> of <Type>>
-	Type.Tuple					= <<Type> * <{Type "*"}+>>
+	Type.SugaredTupleType 		= <<Type> * <{Type "*"}+>>
 	Type						= <(<Type>)>														{bracket}
 	
 	Pattern.Wildcard			= <_>
