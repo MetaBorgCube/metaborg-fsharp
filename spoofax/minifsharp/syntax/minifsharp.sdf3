@@ -49,7 +49,7 @@ context-free syntax
 	Expression.TypeDefinition	= <type <Identifier> = <TypeDefinition>>
 	Expression.Const			= <<Const>>
 	Expression.Identifier		= <<Identifier>>
-	Expression.Application		= <<Expression> <Expression>> 										{layout(		gt(col(first(2)),col(first(1))))}	// second Expression must be on a righter column than first Expression
+	Expression.Application		= <<Expression> <Expression>> 										{layout(			gt(col(first(2)),col(first(1))))}	// second Expression must be on a righter column than first Expression
 	Expression.Tuple			= <<Expression> , <{Expression ","}+>>
 	Expression.List				= <[<{Expression ";"}*>]>
 	Expression.Plus				= <<Expression> + <Expression>>
@@ -62,12 +62,12 @@ context-free syntax
 	Expression.Not				= <! <Expression>>
 	Expression					= <(<Expression>)>													{bracket}
 	
-	Let.Let						= <let <Identifier> <Arguments?> <ReturnType?> = <ExprBlock>> 		{layout(and(	gt(col(first(5)),col(first(1))), 	// "=" must be on a a righter column than let
-																													gt(col(first(6)),col(first(1)))))}	// ExprBlock must be on a a righter column than let
-	Let.LetRec					= <let rec <Identifier> <Arguments?> <ReturnType?> = <ExprBlock>> 	{layout(and(	gt(col(first(6)),col(first(1))), 	// "=" must be on a righter column than let
-																													gt(col(first(7)),col(first(1)))))}	// ExprBlock must be on a righter column than let
+	Let.Let						= <let <Identifier> <Arguments?> <ReturnType?> = <ExprBlock>> 		{layout(and(		gt(col(first(5)),col(first(1))), 	// "=" must be on a a righter column than let
+																														gt(col(first(6)),col(first(1)))))}	// ExprBlock must be on a a righter column than let
+	Let.LetRec					= <let rec <Identifier> <Arguments?> <ReturnType?> = <ExprBlock>> 	{layout(and(		gt(col(first(6)),col(first(1))), 	// "=" must be on a righter column than let
+																														gt(col(first(7)),col(first(1)))))}	// ExprBlock must be on a righter column than let
 	
-	ExprBlock.ExprBlock   		= <<ExprNewline> <ExprNewline*>> 									{layout(eq(		col(first(1)),col(first(2))))}		// all Expressions must be on the same column
+	ExprBlock.ExprBlock   		= <<ExprNewline> <ExprNewline*>> 									{layout(eq(			col(first(1)),col(first(2))))}		// all Expressions must be on the same column
 	
 	Const.Integer				= <<Integer>>
 	Const.Bool					= <<Boolean>>
@@ -81,10 +81,14 @@ context-free syntax
 	Argument.Identifier			= <<Identifier>>
 	Argument.TypedIdentifier	= <( <Identifier> : <Type> )>
 	
-	Rules.RulesEscaped			= <<{Rule "|"}+>>
-	Rules.Rules					= <| <{Rule "|"}+>>
+	Rules.RulesEscaped			= <<RuleFirst> <Rule*>>												{layout(			ge(col(first(2)),col(first(1))))}
+	Rules.Rules					= <<Rule> <Rule*>>													{layout(			ge(col(first(2)),col(first(1))))}
 	
-	Rule.Rule					= <<Pattern> -\> <Expression>>
+	RuleFirst.RuleFirst			= <<Pattern> -\> <Expression>> 										{layout(and(		ge(col(first(2)),col(first(1))), 
+																	 													ge(col(first(3)),col(first(1)))))}
+	Rule.Rule					= <| <Pattern> -\> <Expression>> 									{layout(and(and(	ge(col(first(2)),col(first(1))), 
+																	 													ge(col(first(3)),col(first(1))))),
+																	 													ge(col(first(4)),col(first(1))))}
 	
 	TypeDefinition.TypeEscaped	= <<{Type "|"}*>>
 	TypeDefinition.Type			= <| <{Type "|"}*>>
