@@ -5,44 +5,50 @@ imports
 	src-gen/signatures/minifsharp-sig
 
 signature
-	sorts Expression
-	constructors
+sorts 
+
+	BinaryOperation	BinaryOperand
+	UnaryOperation	UnaryOperand
+
+constructors
 	
 	// Binary Operations
 	
-	BinaryOperation			: BinaryOperand * Expression * Expression -> Expression
+	BinaryOperation				: BinaryOperand * Expression * Expression -> Expression
 	
-	PlusOp					: BinaryOperand
-	MinOp					: BinaryOperand
-	MultOp					: BinaryOperand
-	ConcatOp				: BinaryOperand
-	AndOp					: BinaryOperand
-	OrOp					: BinaryOperand
+	PlusOp						: BinaryOperand
+	MinOp						: BinaryOperand
+	MultOp						: BinaryOperand
+	ConcatOp					: BinaryOperand
+	AndOp						: BinaryOperand
+	OrOp						: BinaryOperand
 	
 	// Unary Operations
 	
-	UnaryOperation			: UnaryOperand * Expression -> Expression
+	UnaryOperation				: UnaryOperand * Expression -> Expression
 	
-	NegativeOp				: BinaryOperand
-	NotOp					: BinaryOperand
-	
-	sorts Rule
-	
-	
+	NegativeOp					: BinaryOperand
+	NotOp						: BinaryOperand
 	
 rules
 
 	// Binary Operations
 
-	desugar: Plus(a, b)		-> BinaryOperation(PlusOp(), a, b)
-	desugar: Min(a, b)		-> BinaryOperation(MinOp(), a, b)
-	desugar: Mult(a, b)		-> BinaryOperation(MultOp(), a, b)
-	desugar: Concat(a, b)	-> BinaryOperation(ConcatOp(), a, b)
-	desugar: And(a, b)		-> BinaryOperation(AndOp(), a, b)
-	desugar: Or(a, b)		-> BinaryOperation(OrOp(), a, b)
+	desugar: Plus(a, b)			-> BinaryOperation(PlusOp(), a, b)
+	desugar: Min(a, b)			-> BinaryOperation(MinOp(), a, b)
+	desugar: Mult(a, b)			-> BinaryOperation(MultOp(), a, b)
+	desugar: Concat(a, b)		-> BinaryOperation(ConcatOp(), a, b)
+	desugar: And(a, b)			-> BinaryOperation(AndOp(), a, b)
+	desugar: Or(a, b)			-> BinaryOperation(OrOp(), a, b)
 	
 	// Unary Operations
 	
-	desugar: Negative(a)	-> UnaryOperation(NegativeOp(), a)
-	desugar: Not(a)			-> UnaryOperation(NotOp(), a)
+	desugar: Negative(a)		-> UnaryOperation(NegativeOp(), a)
+	desugar: Not(a)				-> UnaryOperation(NotOp(), a)
+	
+	// Match Rules
+	
+	desugar: Rules(a, b)		-> <concat> [[a], b]
+	desugar: RulesEscaped(a, b)	-> <concat> [[a], b]
+	desugar: RuleFirst(a, b)	-> Rule(a, b)
 	
