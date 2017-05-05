@@ -41,7 +41,7 @@ context-free start-symbols
 
 context-free syntax
   
-	Program.Program				= <<Expression*> [\<EntryPoint\>] <Let>>
+	Program.Program				= <<ExprBlock?> [\<EntryPoint\>] <Let>>
 	
 	Expression.Let				= <<Let>>
 	Expression.Match			= <match <Expression> with <Rules>>
@@ -65,7 +65,7 @@ context-free syntax
 	Let.Let						= <let <Identifier> <Arguments?> <ReturnType?> = <ExprBlock>> {layout(gt(col(first(5)),col(first(1)))), layout(gt(col(first(6)),col(first(1))))}
 	Let.LetRec					= <let rec <Identifier> <Arguments?> <ReturnType?> = <ExprBlock>> {layout(gt(col(first(6)),col(first(1)))), layout(gt(col(first(7)),col(first(1))))}
 	
-	ExprBlock.ExpressionBlock   = <<Expression> <Expression*>> {layout(eq(col(first(1)),col(first(2))))}
+	ExprBlock   = <<ExprNewline> <ExprNewline*>> {layout(eq(col(first(1)),col(first(2))))}
 	
 	Const.Integer				= <<Integer>>
 	Const.Bool					= <<Boolean>>
@@ -108,6 +108,10 @@ context-free syntax
 	Pattern						= <(<Pattern>)>												{bracket}
 	
 	ListPattern.ListPattern		= <[<{Pattern ";"}*>]>
+	
+	syntax
+		
+	ExprNewline-CF = Expression-CF LAYOUT?-CF {enforce-newline}
 	
 context-free priorities
   { left:
