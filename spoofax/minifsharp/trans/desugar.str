@@ -1,56 +1,65 @@
 module desugar
 
 imports
-src-gen/signatures/minifsharp-sig
+	src-gen/signatures/minifsharp-sig
 
 signature
-	sorts Expression
-	constructors
+sorts 
+
+	BinaryOperation	BinaryOperand
+	UnaryOperation	UnaryOperand
+
+constructors
 	
 	// Binary Operations
 	
-	Plus					: Exp * Exp -> Exp
-	Min						: Exp * Exp -> Exp
-	Mult					: Exp * Exp -> Exp
-	Concat					: Exp * Exp -> Exp
-	And						: Exp * Exp -> Exp
-	Or						: Exp * Exp -> Exp
+	BinaryOperation				: BinaryOperand * Expression * Expression -> Expression
 	
-	BinaryOperation			: BinaryOperand * Exp * Exp -> Exp
+
+	PlusOp						: BinaryOperand
+	MinOp						: BinaryOperand
+	MultOp						: BinaryOperand
+	ConcatOp					: BinaryOperand
+	AndOp						: BinaryOperand
+	OrOp						: BinaryOperand
 	
-	TupleType				: List(Type) -> Type
-	TupleExp				: List(Expression) -> Expression
-	
-	PlusOp					: BinaryOperand
-	MinOp					: BinaryOperand
-	MultOp					: BinaryOperand
-	ConcatOp				: BinaryOperand
-	AndOp					: BinaryOperand
-	OrOp					: BinaryOperand
+	// Tuples
+
+	TupleType					: List(Type) -> Type
+	TupleExp					: List(Expression) -> Expression
 	
 	// Unary Operations
 	
-	Negative				: Exp -> Exp
-	Not						: Exp -> Exp
+	UnaryOperation				: UnaryOperand * Expression -> Expression
 	
-	UnaryOperation			: UnaryOperand * Exp -> Exp
-	
-	NegativeOp				: BinaryOperand
-	NotOp					: BinaryOperand
+	NegativeOp					: BinaryOperand
+	NotOp						: BinaryOperand
 	
 rules
-
-	desugar: Plus(a, b)				-> BinaryOperation(PlusOp(), a, b)
-	desugar: Min(a, b)				-> BinaryOperation(MinOp(), a, b)
-	desugar: Mult(a, b)				-> BinaryOperation(MultOp(), a, b)
-	desugar: Concat(a, b)			-> BinaryOperation(ConcatOp(), a, b)
-	desugar: And(a, b)				-> BinaryOperation(AndOp(), a, b)
-	desugar: Or(a, b)				-> BinaryOperation(OrOp(), a, b)
 	
-	desugar: Negative(a)			-> UnaryOperation(NegativeOp(), a)
-	desugar: Not(a)					-> UnaryOperation(NotOp(), a)
+	// Binary Operations
+
+	desugar: Plus(a, b)					-> BinaryOperation(PlusOp(), a, b)
+	desugar: Min(a, b)					-> BinaryOperation(MinOp(), a, b)
+	desugar: Mult(a, b)					-> BinaryOperation(MultOp(), a, b)
+	desugar: Concat(a, b)				-> BinaryOperation(ConcatOp(), a, b)
+	desugar: And(a, b)					-> BinaryOperation(AndOp(), a, b)
+	desugar: Or(a, b)					-> BinaryOperation(OrOp(), a, b)
+	
+	// Unary Operations
+	
+	desugar: Negative(a)				-> UnaryOperation(NegativeOp(), a)
+	desugar: Not(a)						-> UnaryOperation(NotOp(), a)
+	
+	// Match Rules
+	
+	desugar: Rules(a, b)				-> <concat> [[a], b]
+	desugar: RulesEscaped(a, b)			-> <concat> [[a], b]
+	desugar: RuleFirst(a, b)			-> Rule(a, b)
+
+	// Tuple rules
 	
 	desugar: SugaredTupleType(a,b)	-> TupleType(<concat> [[a], b])
 	desugar: SugaredTupleExp(a,b)	-> TupleExp (<concat> [[a], b])
-
+	
 	
