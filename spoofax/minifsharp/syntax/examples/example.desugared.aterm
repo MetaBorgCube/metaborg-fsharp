@@ -10,7 +10,7 @@ Program(
       , Rules(
           Rule(
             Wildcard()
-          , Plus(Const(Integer("10")), Const(Integer("10")))
+          , BinaryOperation(PlusOp(), Const(Integer("10")), Const(Integer("10")))
           )
         , []
         )
