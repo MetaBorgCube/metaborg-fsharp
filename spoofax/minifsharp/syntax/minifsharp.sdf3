@@ -6,7 +6,7 @@ imports
 
 lexical syntax
 
-	Identifier					= [a-zA-Z] [a-zA-Z0-9]* 
+	Identifier					= [a-z] [a-zA-Z0-9]* 
 	TypeConstIdentifier			= [A-Z] [a-zA-Z0-9]* 
 	Integer						= [0-9]+
 
@@ -21,6 +21,18 @@ lexical syntax
 	Identifier.Int    			= "int"   {reject}
 	Identifier.Bool   			= "bool"  {reject}
 	Identifier.List   			= "list"  {reject}
+
+	TypeConstIdentifier.Let    	= "let"   {reject}
+	TypeConstIdentifier.Rec    	= "rec"   {reject}
+	TypeConstIdentifier.Match  	= "match" {reject}
+	TypeConstIdentifier.With   	= "with"  {reject}
+	TypeConstIdentifier.Printf 	= "printf"{reject}
+	TypeConstIdentifier.Type   	= "type"  {reject}
+	TypeConstIdentifier.True 	= "true"  {reject}
+	TypeConstIdentifier.False  	= "false" {reject}
+	TypeConstIdentifier.Int    	= "int"   {reject}
+	TypeConstIdentifier.Bool   	= "bool"  {reject}
+	TypeConstIdentifier.List   	= "list"  {reject}
 	
 lexical restrictions
 
@@ -37,6 +49,7 @@ lexical syntax start-symbols
 context-free start-symbols
 
 	Program
+	Expression
 
 context-free syntax
   
