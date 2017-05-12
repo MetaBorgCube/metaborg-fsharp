@@ -17,7 +17,7 @@ test id single 			[[a]] parse succeeds
 test id multiple		[[abc]] parse succeeds
 test id case			[[aBC]] parse succeeds
 test id case number		[[a1BC]] parse succeeds
-test id start case 		[[Abc]] parse fails
+test id start case 		[[Abc]] parse succeeds
 test id start number 	[[1abc]] parse fails
 test id keyword let		[[let]] parse fails
 test id keyword rec 	[[rec]] parse fails
@@ -71,3 +71,10 @@ test type no id 		[[type 1 = int]] parse fails
 
 test app				[[1 1]] parse succeeds
 test app multiple		[[1 1 1]] parse succeeds
+test app multiple2		[[1 1 1]] parse to minifsharp [[ (1 1) 1 ]]
+test app binop   		[[1 1+1]] parse to minifsharp [[ (1 1) + 1 ]]
+
+test plus [[ plus 8 -1	]] parse to minifsharp [[ ((plus 8) - 1)]]
+test plus [[ plus 8 - 1	]] parse to minifsharp [[ ((plus 8) - 1)]]
+test plus [[ plus 8-1	]] parse to minifsharp [[ ((plus 8) - 1)]]
+
