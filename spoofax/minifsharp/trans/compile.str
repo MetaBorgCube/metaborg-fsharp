@@ -1,0 +1,33 @@
+module compile
+
+imports
+
+  stratego/metaborg
+  libstratego-gpp
+  libspoofax/stratego/debug
+  src-gen/signatures/-
+  trans/pp
+  trans/desugar
+  trans/minifsharp
+  
+imports
+
+rules
+
+	
+	show-cil: (selected, _, ast, path, project-path) -> (filename, result) with
+	    filename := <guarantee-extension(|$[cil])> path;
+		result := <desugar-all; program-to-cil; pp-debug> ast
+
+	program-to-cil: Program(_,Let(a,b,c,d)) -> ProgramCil(Method(a, <program-to-cil> d), a)
+	
+	program-to-cil: ExprBlock(exp, None()) -> <program-to-cil> exp
+	program-to-cil: ExprBlock(exp, Some(next)) -> <debug0; program-to-cil> next // only last expression actually does something.. i think
+	
+	program-to-cil: Const(Integer(x)) -> [Ldc(x)]
+	program-to-cil: BinaryOperation(op, a, b) -> <debug1; concat> [<program-to-cil> a, <program-to-cil> b, <debug2; binop-to-cil> op]
+	
+	binop-to-cil: PlusOp() -> [Add()]
+	binop-to-cil: MinOp()  -> [Sub()]
+	binop-to-cil: MultOp() -> [Mul()]
+	

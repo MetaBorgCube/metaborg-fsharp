@@ -1,0 +1,93 @@
+module CIL
+
+lexical syntax
+Int = [0-9]+
+Name = [a-zA-Z] [a-zA-Z0-9]*
+
+context-free start-symbols
+	Test
+
+context-free syntax
+  
+	Test.ProgramCil				= <
+.assembly extern FSharp.Core
+{
+  .ver 4:4:1:0
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A)
+}
+.assembly 'test1' { }
+
+.module test1.exe
+
+.class public auto ansi abstract sealed Test1 extends [mscorlib]System.Object
+{
+  .method public static specialname default int32 get_main () cil managed 
+  {
+    .maxstack 8
+    ldsfld int32 '\<StartupCode$test1\>.$Test1'::main@226
+    ret 
+  } 
+  .property int32 main ()
+  {
+    .get default int32 Test1::get_main () 
+  }
+  <Method>
+}
+
+.namespace '\<StartupCode$test1\>'
+{
+  .class private auto ansi abstract sealed $Test1 extends [mscorlib]System.Object
+  {
+    .field  assembly static  int32 main@226
+    .field  assembly static  int32 init@
+
+    .method public static  default void main@ () cil managed 
+    {
+      .entrypoint
+      .maxstack 1024
+      .locals init
+      (
+        int32 V_0,
+        class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2\<int32, class [FSharp.Core]Microsoft.FSharp.Core.Unit\> V_1,
+        int32 V_2
+      )
+
+      ldstr "Result: %A"
+      newobj instance void class [FSharp.Core]Microsoft.FSharp.Core.PrintfFormat`5\<class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2\<int32, class [FSharp.Core]Microsoft.FSharp.Core.Unit\>, class [mscorlib]System.IO.TextWriter, class [FSharp.Core]Microsoft.FSharp.Core.Unit, class [FSharp.Core]Microsoft.FSharp.Core.Unit, int32\>::'.ctor'(string)
+      call !!0 class [FSharp.Core]Microsoft.FSharp.Core.ExtraTopLevelOperators::PrintFormatLine\<class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2\<int32,class [FSharp.Core]Microsoft.FSharp.Core.Unit\>\> (class [FSharp.Core]Microsoft.FSharp.Core.PrintfFormat`4\<!!0,class [mscorlib]System.IO.TextWriter,class [FSharp.Core]Microsoft.FSharp.Core.Unit,class [FSharp.Core]Microsoft.FSharp.Core.Unit\>)
+      call int32 class Test1::get_<Name>()
+      callvirt instance !1 class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2\<int32, class [FSharp.Core]Microsoft.FSharp.Core.Unit\>::Invoke(!0)
+      pop 
+      ldc.i4.0 
+      dup 
+      stsfld int32 '\<StartupCode$test1\>.$Test1'::main@226
+      stloc.0 
+      ret 
+    }
+  }
+}
+>
+
+
+Method.Method = <
+.method public static specialname default int32 get_<Name> ()  cil managed 
+{
+	.custom instance void class [mscorlib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::'.ctor'() =  (01 00 00 00 )
+	.maxstack 1024
+	<{Instruction "\n"}*>
+	ret
+}
+>
+
+Instruction.Ldc = <ldc.i4 <Int>>
+Instruction.Mul = <mul>
+Instruction.Add = <add>
+Instruction.Sub = <sub>
+Instruction.Div = <div>
+Instruction.Neg = <neg>
+Instruction.Ret = <ret>
+Instruction.Pop = <pop>
+Instruction.Dup = <dup>
+
+
+

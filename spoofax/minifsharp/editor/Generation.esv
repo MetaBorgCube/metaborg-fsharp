@@ -1,0 +1,8 @@
+module Generation
+
+menus
+  
+  menu: "Generation" (openeditor)
+    
+    action: "Generate CIL"      = show-cil
+
