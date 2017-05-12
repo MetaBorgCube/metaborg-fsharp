@@ -1,0 +1,22 @@
+type entry = Some of int | None
+
+let rec amountEmpty (entries : entry list) : int = match entries with
+    | []                -> 0
+    | head :: tail      -> match head with
+                           | Some n -> amountEmpty tail
+                           | None -> 1 + amountEmpty tail
+
+let testList = 
+    [   Some 12 ;
+        Some 18 ;
+        Some 19 ;
+        Some 40 ;
+        Some 64 ;
+        Some 90 ;
+        None     ;
+        None     ;
+        None     
+    ]
+
+[<EntryPoint>]
+let testEmpty = amountEmpty testList

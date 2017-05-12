@@ -1,3 +1,2 @@
 [<EntryPoint>]
-let x = match a with
-	| _ -> 10 + 10
+let x = 1abc
