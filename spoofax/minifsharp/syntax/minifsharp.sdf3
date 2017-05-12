@@ -6,7 +6,7 @@ imports
 
 lexical syntax
 
-	Identifier					= [a-z] [a-zA-Z0-9]* 
+	Identifier					= [a-zA-Z] [a-zA-Z0-9]* 
 	TypeConstIdentifier			= [A-Z] [a-zA-Z0-9]* 
 	Integer						= [0-9]+
 
@@ -38,7 +38,7 @@ lexical restrictions
 
 	Identifier          		-/- [a-zA-Z0-9]
 	TypeConstIdentifier 		-/- [a-zA-Z0-9]
-	Integer             		-/- [0-9]
+	Integer             		-/- [a-zA-Z0-9]
 
 lexical syntax start-symbols
 
@@ -146,7 +146,9 @@ syntax
 	ExprNewline-CF = Expression-CF LAYOUT?-CF {enforce-newline}
 	
 context-free priorities
-
+{left:
+	Expression.Application
+  } >
   { left:
     Expression.Plus
 	Expression.Min
@@ -157,7 +159,7 @@ context-free priorities
   } > { left:
 	Expression.Negative
 	Expression.Not
-  } > { left:
+	}  > { left:
 	Expression.Match
   }
 	
