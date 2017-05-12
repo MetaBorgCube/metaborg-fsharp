@@ -1,0 +1,6 @@
+let rec fibslow (i : int) = match i with
+| 0 | 1 -> i
+| _ -> (fibslow (i - 1)) + (fibslow (i - 2))
+
+[<EntryPoint>]
+let test = printf (fibslow 10)

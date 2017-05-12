@@ -1,0 +1,21 @@
+type entry = Some of int | None
+
+let rec amountSum (entries : entry list) : int = match entries with
+    | []                -> 0
+    | Some n :: tail    -> n + amountSum tail
+    | None :: tail      -> amountSum tail
+
+let testList = 
+    [   Some 12 ;
+        Some 18 ;
+        Some 19 ;
+        Some 40 ;
+        Some 64 ;
+        Some 90 ;
+        None     ;
+        None     ;
+        None     
+    ]
+    
+[<EntryPoint>]
+let testSum = amountSum testList
