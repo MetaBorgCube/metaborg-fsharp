@@ -1,0 +1,38 @@
+module LetLayoutTest
+language minifsharp
+
+start symbol Expression
+
+fixture [[
+	[[...]]
+]]
+
+// Basic Let Constructs
+
+test let incorrect enter [[
+let b 
+= true
+]] parse fails
+
+test let enter [[
+let b
+	= true
+]] parse succeeds
+
+test let no enter [[
+let b = true
+]] parse succeeds
+
+test let nested [[
+let c = 
+    let d =
+     true
+    true
+]] parse succeeds
+
+test let nested incorrect [[
+let c = 
+    let d =
+    true
+    true
+]] parse fails

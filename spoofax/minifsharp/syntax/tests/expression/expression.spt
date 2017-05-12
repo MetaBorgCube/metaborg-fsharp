@@ -1,0 +1,73 @@
+module ExpressionTest
+language minifsharp
+
+start symbol Expression
+
+// Constant Expressions
+
+test integer 0 			[[0]] parse succeeds
+test integer 1 			[[1]] parse succeeds
+test integer large		[[99999]] parse succeeds
+test boolean 			[[true]] parse succeeds
+test boolean 			[[false]] parse succeeds
+
+// Identifier Expressions
+
+test id single 			[[a]] parse succeeds
+test id multiple		[[abc]] parse succeeds
+test id case			[[aBC]] parse succeeds
+test id case number		[[a1BC]] parse succeeds
+test id start case 		[[Abc]] parse fails
+test id start number 	[[1abc]] parse fails
+test id keyword let		[[let]] parse fails
+test id keyword rec 	[[rec]] parse fails
+test id keyword match	[[match]] parse fails
+test id keyword with 	[[with]] parse fails
+test id keyword printf	[[printf]] parse fails
+test id keyword type 	[[type]] parse fails
+test id keyword int		[[int]] parse fails
+test id keyword bool 	[[bool]] parse fails
+test id keyword list	[[list]] parse fails
+test id keyword rec 	[[rec]] parse fails
+
+// Binary | Unary Operation Expressions
+
+test bin no space		[[1+1]] parse succeeds
+test plus				[[1 + 1]] parse succeeds
+test min				[[1 - 1]] parse succeeds
+test mult				[[1 * 1]] parse succeeds
+test concat				[[1 :: 1]] parse succeeds
+test and				[[1 && 1]] parse succeeds
+test or					[[1 || 1]] parse succeeds
+test un no space		[[-1]] parse succeeds
+test negative			[[- 1]] parse succeeds
+test not				[[! 1]] parse succeeds
+test complex			[[(1+1)*2]] parse succeeds
+
+// List | Tuples Expressions
+
+test tuple basic		[[1 , 1]] parse succeeds
+test tuple multiple		[[1 , 1 , 1]] parse succeeds
+test tuple incorrect	[[, 1 , 1 , 1]] parse fails
+
+test list basic			[[[ [1 ; 1] ]]] parse succeeds
+test list single		[[[ [1] ]]] parse succeeds
+test list empty			[[[ [] ]]] parse succeeds
+test list multiple		[[[ [1 ; 1 ; 1] ]]] parse succeeds
+test list incorrect		[[[ [; 1 ; 1 ; 1] ]]] parse fails
+test list nested single	[[[[ [[]] ]]]] parse succeeds
+test list nested		[[[[ [[] ; []] ]]]] parse succeeds
+
+// Print Expressions
+
+test print simple		[[printf 1]] parse succeeds
+
+// Type Expressions
+
+test type simple		[[type a = int]] parse succeeds
+test type no id 		[[type 1 = int]] parse fails
+
+// Application Expressions
+
+test app				[[1 1]] parse succeeds
+test app multiple		[[1 1 1]] parse succeeds

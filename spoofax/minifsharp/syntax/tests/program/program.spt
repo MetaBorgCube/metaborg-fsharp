@@ -1,0 +1,24 @@
+module ProgramTest
+language minifsharp
+
+start symbol Program
+
+fixture [[
+	[[...]]
+]]
+
+// Incorrect Program Definition
+
+test main no statement 	[[class test { public static void main(String[] args) {} }]] parse fails
+test no entryp 			[[let x = 5;]] parse fails 
+test incomplete let		[[ [<EntryPoint>] let x ]] parse fails  
+test incomplete let rec	[[ [<EntryPoint>] let rec x ]] parse fails  
+test incomplete match	[[ [<EntryPoint>] match 0 with ]] parse fails  
+
+// EntryPoint Definition
+ 
+test no encap entryp 	[[ EntryPoint let x = 5 ]] parse fails  
+test encap 1 entryp 	[[ <EntryPoint> let x = 5 ]] parse fails  
+test encap 2 entryp 	[[ [EntryPoint] let x = 5 ]] parse fails  
+test wrongencap entryp 	[[ <[EntryPoint]> let x = 5 ]] parse fails 
+test encap entryp 		[[ [<EntryPoint>] let x = 5 ]] parse succeeds  

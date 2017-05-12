@@ -1,0 +1,36 @@
+module PatternTest
+language minifsharp
+
+start symbol Program
+
+fixture [[
+	[<EntryPoint>]
+	let x = match a with
+		| [[...]] -> 1
+]]
+
+// Basic Patterns
+
+test wildcard			[[_]] parse succeeds
+test const int			[[1]] parse succeeds
+test const int large	[[9999999]] parse succeeds
+test const bool true	[[true]] parse succeeds
+test const bool false	[[false]] parse succeeds
+test var				[[a]] parse succeeds
+test var start number	[[1abc]] parse fails
+test concat				[[1 :: 1]] parse succeeds
+test concat long		[[1 :: 1 :: 1 :: 1]] parse succeeds
+test or					[[1 | 1]] parse succeeds
+test wildcard			[[_]] parse succeeds
+test encapsulation		[[(_)]] parse succeeds
+
+// List | Tuple Patterns
+
+test list single		[[ [1] ]] parse succeeds
+test list multiple		[[ [1 ; 1 ; 1] ]] parse succeeds
+test list wrong start	[[ [; 1 ; 1 ; 1] ]] parse fails
+test list empty			[[ [] ]] parse succeeds
+test tuple single		[[1 , 1]] parse succeeds
+test tuple multiple		[[1 , 1 , 1]] parse succeeds
+test tuple wrong start	[[, 1 , 1]] parse fails
+test tuple complex		[[(1,true,1::2, [1,2], (1,2,3))]] parse succeeds

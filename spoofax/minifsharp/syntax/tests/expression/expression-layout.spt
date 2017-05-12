@@ -1,0 +1,37 @@
+module ExpressionLayoutTest
+language minifsharp
+
+start symbol Expression
+
+fixture [[
+	[[...]]
+]]
+
+// Basic Binary Operations
+
+test binop enter after [[
+1 +
+2
+]] parse succeeds
+
+test binop enter [[
+1 
++ 2
+]] parse succeeds
+
+test binop enter incorrect [[
+	1 
++ 2
+]] parse fails
+
+test binop enter incorrect after [[
+	1 +
+2
+]] parse fails
+
+test binop different lines [[
+1 +
+2
+]] parse to minifsharp [[
+1 + 2
+]]
