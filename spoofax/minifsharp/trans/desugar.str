@@ -61,9 +61,6 @@ rules
 	
 	desugar: SugaredTupleType(a,b)	-> TupleType(<concat> [[a], b])
 	desugar: SugaredTupleExp(a,b)	-> TupleExp (<concat> [[a], b])
-	
-	// Let binding rule
-	
-	desugar: LetExp(x) 				-> x
+
 	
 	

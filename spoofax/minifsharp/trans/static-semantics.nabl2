@@ -6,6 +6,10 @@ imports
 
 signature
 
+  types
+    Int()
+    Bool()
+    
   name resolution
 
     labels
@@ -40,7 +44,7 @@ rules
 	[[ next ^ (s') ]].
 	
   [[ ExprBlock(exp, next) ^ (s) ]] := 
-	[[ exp ^ (s) ]],
+	[[ exp ^ (s) : ty ]],
 	[[ next ^ (s) ]].
 
   [[ Let(id, args, retTy, body) ^ (s, s') ]] := 
@@ -55,8 +59,26 @@ rules
   	Const{id} -> s, 
   	Const{id} |-> d.
   
-  [[ Const(v) ^ (s) ]] :=
-    true.
+  [[ Const(v) ^ (s) : ty]] :=
+    [[ v ^ (s) : ty]].
+  
+  [[ Integer(x) ^ (s) : Int()]] :=
+   true.
+   
+  [[ Bool(x) ^ (s) : Bool()]] :=
+   true.
+   
+  [[ BinaryOperation(PlusOp(), a,b) ^ (s) : ty ]] := [[ a ^ (s) : Int() ]], [[ b ^ (s) : Int() ]].
+  [[ BinaryOperation(MinOp() , a,b) ^ (s) : ty ]] := [[ a ^ (s) : Int() ]], [[ b ^ (s) : Int() ]].
+  [[ BinaryOperation(MultOp(), a,b) ^ (s) : ty ]] := [[ a ^ (s) : Int() ]], [[ b ^ (s) : Int() ]].
+  [[ BinaryOperation(ConcatOp(), a,b) ^ (s) : ty ]] := [[ a ^ (s) : c ]], [[ b ^ (s) : c ]].
+  [[ BinaryOperation(AndOp(), a,b) ^ (s) : ty ]] := [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
+  [[ BinaryOperation(OrOp(), a,b) ^ (s) : ty ]] := [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
+
   
   [[ None() ^ (s) ]] :=
     true.
+    
+  
+    
+    
