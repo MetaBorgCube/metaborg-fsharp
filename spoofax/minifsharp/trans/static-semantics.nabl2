@@ -29,40 +29,43 @@ rules
 
   [[ Program(expBlock, main) ^ (s) ]] :=
 	new mainscope,
-  	ProgramExp[[ expBlock ^ (s, mainscope) ]],
-  	[[ main ^ (s, mainscope) ]],
+  	ProgramExp [[ expBlock ^ (s, mainscope) : ty]],
+  	[[ main ^ (s, mainscope) : ty2]],
   	true.
 
-  ProgramExp[[ Some(block @ ExprBlock(_, _)) ^ (s, mainscope) ]] :=
-  	ProgramExp[[ block ^ (s, mainscope) ]].
+  ProgramExp[[ Some(block @ ExprBlock(_, _)) ^ (s, mainscope) : ty ]] :=
+  	ProgramExp[[ block ^ (s, mainscope) : ty]].
   	
-  ProgramExp[[ None() ^ (s, mainscope) ]] :=
+  ProgramExp[[ None() ^ (s, mainscope) : ty ]] :=
     mainscope -P-> s,
     true.
 	
-  ProgramExp[[ ExprBlock(LetExp(x), next) ^ (s, mainscope) ]] := 
+  ProgramExp[[ ExprBlock(LetExp(x), next) ^ (s, mainscope) : ty ]] := 
   	new s',
   	s' -P-> s,
-	[[ x ^ (s, s') ]],
-	ProgramExp[[ next ^ (s', mainscope) ]].
+	[[ x ^ (s, s') : ty1]],
+	ProgramExp[[ next ^ (s', mainscope) : ty2 ]].
 	
-  ProgramExp[[ ExprBlock(exp, next) ^ (s, mainscope) ]] := 
-	[[ exp ^ (s) : ty ]],
-	ProgramExp[[ next ^ (s, mainscope) ]].
+  ProgramExp[[ ExprBlock(exp, next) ^ (s, mainscope) : ty ]] := 
+	[[ exp ^ (s) : ty1 ]],
+	ProgramExp[[ next ^ (s, mainscope) : ty2 ]].
 	
-  [[ ExprBlock(exp, next) ^ (s) ]] := 
-	[[ exp ^ (s) : ty ]],
-	[[ next ^ (s) ]].
+  [[ ExprBlock(exp, None()) ^ (s) : ty]] := 
+	[[ exp ^ (s) : ty ]].
+	
+  [[ ExprBlock(exp, Some(next)) ^ (s) : ty]] := 
+	[[ exp ^ (s) : ty1 ]],
+	[[ next ^ (s) : ty ]].
 
-  [[ Let(id, args, retTy, body) ^ (s, s') ]] := 
+  [[ Let(id, args, retTy, body) ^ (s, s') : ty ]] := 
 	Const{id} <- s',
-    [[ body ^ (s) ]].
+    [[ body ^ (s) : ty]].
     
   [[ LetRec(id, args, retTy, body) ^ (s, s') ]] := 
 	Const{id} <- s',
     [[ body ^ (s') ]].
 
-  [[ Identifier(id) ^ (s) ]] :=
+  [[ Identifier(id) ^ (s) : ty]] :=
   	Const{id} -> s, 
   	Const{id} |-> d.
   
