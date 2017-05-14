@@ -29,8 +29,10 @@ rules
 
   [[ Program(expBlock, main) ^ (s) ]] :=
 	new mainscope,
+	new mainscopeinside,
+	mainscopeinside -P-> mainscope,
   	ProgramExp [[ expBlock ^ (s, mainscope) : ty]],
-  	[[ main ^ (s, mainscope) : ty2]],
+  	[[ main ^ (mainscope,  mainscopeinside) : ty2]],
   	true.
 
   ProgramExp[[ Some(block @ ExprBlock(_, _)) ^ (s, mainscope) : ty ]] :=
