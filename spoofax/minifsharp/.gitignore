@@ -3,6 +3,8 @@
 /src-gen
 /target
 
+example.*
+
 /.classpath
 /.project
 /.settings

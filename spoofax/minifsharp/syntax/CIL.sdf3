@@ -32,6 +32,8 @@ context-free syntax
     .get default int32 Test1::get_main () 
   }
   <Method>
+  
+  <{Function "\n"}*>
 }
 
 .namespace '\<StartupCode$test1\>'
@@ -79,6 +81,27 @@ Method.Method = <
 }
 >
 
+Function.FunctionDefinition = <
+.class nested assembly auto ansi serializable beforefieldinit <Name> extends class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2\<int32,int32\>
+{
+  .method assembly specialname rtspecialname instance default void '.ctor' ()  cil managed 
+  {
+    .maxstack 1024
+    ldarg.0 
+    call instance void class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2\<int32, int32\>::'.ctor'()
+    ret 
+  } 
+  .method public virtual strict instance default int32 Invoke (int32 x)  cil managed 
+  {
+    .maxstack 1024
+    <{Instruction "\n"}*>
+    ret 
+  }
+}
+>
+
+Instruction.NewObj = <newobj instance void class Test1/<Name>::'.ctor'()>
+Instruction.CallVirt = <callvirt instance !1 class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2\<int32, int32\>::Invoke(!0)>
 Instruction.Ldc = <ldc.i4 <Int>>
 Instruction.Mul = <mul>
 Instruction.Add = <add>

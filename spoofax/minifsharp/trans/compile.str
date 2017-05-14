@@ -19,15 +19,26 @@ rules
 	    filename := <guarantee-extension(|$[cil])> path;
 		result := <desugar-all; program-to-cil; pp-debug> ast
 
-	program-to-cil: Program(_,Let(a,b,c,d)) -> ProgramCil(Method(a, <program-to-cil> d), a)
+	program-to-cil: Program(e,Let(a,b,c,d)) -> ProgramCil(Method(a, <program-to-cil> d), <nonEntryPoints-to-cil> e, a)
 	
-	program-to-cil: ExprBlock(exp, None()) -> <program-to-cil> exp
+	program-to-cil: Application(Identifier(name),b) -> <concat> [[NewObj(name)], <program-to-cil> b, [CallVirt()]]
+	
+	program-to-cil: ExprBlock(exp, None()) -> <debuge; program-to-cil> exp
 	program-to-cil: ExprBlock(exp, Some(next)) -> <debug0; program-to-cil> next // only last expression actually does something.. i think
 	
 	program-to-cil: Const(Integer(x)) -> [Ldc(x)]
 	program-to-cil: BinaryOperation(op, a, b) -> <debug1; concat> [<program-to-cil> a, <program-to-cil> b, <debug2; binop-to-cil> op]
 	
+	program-to-cil: Let(a,b,c,d) -> [FunctionDefinition(a, <debugd; program-to-cil> d)]
+	
 	binop-to-cil: PlusOp() -> [Add()]
 	binop-to-cil: MinOp()  -> [Sub()]
 	binop-to-cil: MultOp() -> [Mul()]
+	
+	nonEntryPoints-to-cil: None() -> []
+	nonEntryPoints-to-cil: Some(x) -> <debuga; listifyExprBlock; debugb; map(program-to-cil); debugc; concat; debugq> x
+	
+	listifyExprBlock: ExprBlock(exp, Some(next)) -> <concat> [[exp], <listifyExprBlock> next]
+	listifyExprBlock: ExprBlock(exp, None()) -> [exp]
+	
 	
