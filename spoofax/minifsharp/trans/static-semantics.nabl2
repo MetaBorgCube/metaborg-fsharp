@@ -29,22 +29,26 @@ rules
 
   [[ Program(expBlock, main) ^ (s) ]] :=
 	new mainscope,
-  	[[ expBlock ^ (s, mainscope) ]],
+  	ProgramExp[[ expBlock ^ (s, mainscope) ]],
   	[[ main ^ (s, mainscope) ]],
   	true.
 
-  [[ Some(block @ ExprBlock(_, _)) ^ (s, mainscope) ]] :=
-  	[[ block ^ (s, mainscope) ]].
-
-  [[ None() ^ (s, mainscope)]] :=
-	mainscope -P-> s,
-	true.
+  ProgramExp[[ Some(block @ ExprBlock(_, _)) ^ (s, mainscope) ]] :=
+  	ProgramExp[[ block ^ (s, mainscope) ]].
+  	
+  ProgramExp[[ None() ^ (s, mainscope) ]] :=
+    mainscope -P-> s,
+    true.
 	
-  [[ ExprBlock(LetExp(x), next) ^ (s, mainscope) ]] := 
+  ProgramExp[[ ExprBlock(LetExp(x), next) ^ (s, mainscope) ]] := 
   	new s',
   	s' -P-> s,
 	[[ x ^ (s, s') ]],
-	[[ next ^ (s', mainscope) ]].
+	ProgramExp[[ next ^ (s', mainscope) ]].
+	
+  ProgramExp[[ ExprBlock(exp, next) ^ (s, mainscope) ]] := 
+	[[ exp ^ (s) : ty ]],
+	ProgramExp[[ next ^ (s, mainscope) ]].
 	
   [[ ExprBlock(exp, next) ^ (s) ]] := 
 	[[ exp ^ (s) : ty ]],
