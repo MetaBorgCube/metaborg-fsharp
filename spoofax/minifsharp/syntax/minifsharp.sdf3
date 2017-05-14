@@ -146,10 +146,10 @@ syntax
 	ExprNewline-CF = Expression-CF LAYOUT?-CF {enforce-newline}
 	
 context-free priorities
-{left:
-	Expression.Application
-  } >
+
   { left:
+	Expression.Application
+  } > { left:
     Expression.Plus
 	Expression.Min
 	Expression.Mult
@@ -159,7 +159,9 @@ context-free priorities
   } > { left:
 	Expression.Negative
 	Expression.Not
-	}  > { left:
+  } > { left: 
+    Expression.LetExp
+  } > { left:
 	Expression.Match
   }
 	
