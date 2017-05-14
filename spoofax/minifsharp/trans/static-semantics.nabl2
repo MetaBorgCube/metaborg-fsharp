@@ -28,20 +28,23 @@ rules
   init ^ (s) := new s.
 
   [[ Program(expBlock, main) ^ (s) ]] :=
-	new s',
-  	s' -P-> s,
-  	[[ expBlock ^ (s) ]],
-  	[[ main ^ (s, s') ]],
+	new mainscope,
+  	[[ expBlock ^ (s, mainscope) ]],
+  	[[ main ^ (s, mainscope) ]],
   	true.
 
-  [[ Some(block @ ExprBlock(_, _)) ^ (s) ]] :=
-  	[[ block ^ (s) ]].
+  [[ Some(block @ ExprBlock(_, _)) ^ (s, mainscope) ]] :=
+  	[[ block ^ (s, mainscope) ]].
+
+  [[ None() ^ (s, mainscope)]] :=
+	mainscope -P-> s,
+	true.
 	
-  [[ ExprBlock(LetExp(x), next) ^ (s) ]] := 
+  [[ ExprBlock(LetExp(x), next) ^ (s, mainscope) ]] := 
   	new s',
   	s' -P-> s,
 	[[ x ^ (s, s') ]],
-	[[ next ^ (s') ]].
+	[[ next ^ (s', mainscope) ]].
 	
   [[ ExprBlock(exp, next) ^ (s) ]] := 
 	[[ exp ^ (s) : ty ]],
