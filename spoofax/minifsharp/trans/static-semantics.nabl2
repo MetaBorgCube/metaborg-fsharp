@@ -25,6 +25,7 @@ signature
 	  
  functions
   	
+  	simplifyApplicationType : Type -> Type {
   		([], retTy) -> retTy,
   		x -> x
   	}
@@ -97,6 +98,16 @@ rules
 		GetSpecifiedRetTy [[ retTy ^ (s) : ty ]],	  // Constraint of the specified type
 	    [[ body ^ (s_body) : ty]].					  // Constraint of the infered type
     
+    // Match Rules
+    
+    [[ Match(id, rules) ^ (s) : ty ]] :=
+    	[[ id ^ (s) : idType ]],
+    	Map2UT[[ rules ^ (s, idType) : ty ]].
+    	
+    [[ Rule(pattern, body) ^ (s, idType) : ty ]] :=
+    	[[ pattern ^ (s) : idType ]],
+    	[[ body ^ (s) : ty ]].
+    
   	// Function parameters
     
   	CheckParam [[ Identifier(id) ^ (s) : ty ]] := 
@@ -146,3 +157,14 @@ rules
 	    [[ e1 ^ (s) : ([argTy | otherArgTys], funcRetTy) ]],
 	    [[ e2 ^ (s) : argTy ]].
   
+  
+  	// Custom Map rule for unappended types
+  	
+  	Map2UT[[ xs ^ (s1,s2) : ty ]] := 
+  		Map2UT(default)[[ xs ^ (s1,s2) : ty ]].
+	
+	Map2UT(X)[[ [x|xs] ^ (s1,s2) : ty ]] :=
+		X[[ x ^ (s1,s2) : ty ]],
+		Map2UT(X)[[ xs ^ (s1,s2) : ty ]].
+
+	Map2UT(X)[[ [] ^ (s1,s2) : ty ]].
