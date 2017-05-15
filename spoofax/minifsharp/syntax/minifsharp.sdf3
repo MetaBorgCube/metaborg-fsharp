@@ -131,7 +131,7 @@ context-free syntax
 	Pattern.Concat				= <<Pattern> :: <Pattern>>											{layout(and(		ge(col(first(2)),col(first(1))), 
 																	 													ge(col(first(3)),col(first(1)))))}
 	Pattern.List				= <<ListPattern>>
-	Pattern.Or					= <<Pattern> | <Pattern>>											{layout(and(		ge(col(first(2)),col(first(1))), 
+	Pattern.PatternOr			= <<Pattern> | <Pattern>>											{layout(and(		ge(col(first(2)),col(first(1))), 
 																	 													ge(col(first(3)),col(first(1)))))}
 	Pattern.Tuple				= <<Pattern> , <{Pattern "*"}+>>									{layout(and(		ge(col(first(2)),col(first(1))), 
 																	 													ge(col(first(3)),col(first(1)))))}
