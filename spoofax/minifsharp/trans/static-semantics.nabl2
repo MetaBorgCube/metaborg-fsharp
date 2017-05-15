@@ -63,13 +63,19 @@ rules
   [[ Let(id, args, retTy, body) ^ (s, s') : (argTys, retTyp) ]] := 
 	Const{id} <- s',
 	Const{id} : (argTys, retTyp),
-//	ty : retTy,
 	new s_body, 
 	s_body -P-> s,
 	Map1T(CheckParam) [[ args ^ (s_body) : argTys ]], // constraint of the arg types
 	GetSpecifiedRetTy [[ retTy ^ (s) : retTyp ]],	  // Constraint of the specified type
     [[ body ^ (s_body) : retTyp]].					  // Constraint of the infered type
     
+  [[ LetConst(id, retTy, body) ^ (s, s') : ty ]] := 
+	Const{id} <- s',
+	Const{id} : (argTys, retTyp),
+	new s_body, 
+	s_body -P-> s,
+	GetSpecifiedRetTy [[ retTy ^ (s) : ty ]],	  // Constraint of the specified type
+    [[ body ^ (s_body) : ty]].					  // Constraint of the infered type
     
   // funtion parameters
     
