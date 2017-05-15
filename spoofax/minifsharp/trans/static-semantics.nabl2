@@ -25,7 +25,6 @@ signature
 	  
  functions
   	
-  	simplifyFunctionType : Type -> Type {
   		([], retTy) -> retTy,
   		x -> x
   	}
@@ -143,7 +142,7 @@ rules
 	// Application type
 
   	[[ Application(e1, e2) ^ (s) : ty ]] := 
-  		ty is simplifyFunctionType of (otherArgTys, funcRetTy),
+  		ty is simplifyApplicationType of (otherArgTys, funcRetTy),
 	    [[ e1 ^ (s) : ([argTy | otherArgTys], funcRetTy) ]],
 	    [[ e2 ^ (s) : argTy ]].
   
