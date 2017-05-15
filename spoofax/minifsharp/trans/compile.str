@@ -2,7 +2,6 @@ module compile
 
 imports
 
-  stratego/metaborg
   libstratego-gpp
   libspoofax/stratego/debug
   src-gen/signatures/-

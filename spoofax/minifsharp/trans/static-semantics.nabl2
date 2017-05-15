@@ -6,9 +6,10 @@ imports
 
 signature
 
-  types
-    Int()
-    Bool()
+  
+  constructors
+    Int : Type
+    Bool : Type
     
   name resolution
 
