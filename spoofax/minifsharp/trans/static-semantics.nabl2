@@ -60,13 +60,15 @@ rules
 	[[ exp ^ (s) : ty1 ]],
 	[[ next ^ (s) : ty ]].
 
-  [[ Let(id, args, retTy, body) ^ (s, s') : ty ]] := 
+  [[ Let(id, args, retTy, body) ^ (s, s') : (argTys, retTyp) ]] := 
 	Const{id} <- s',
+	Const{id} : (argTys, retTyp),
+//	ty : retTy,
 	new s_body, 
 	s_body -P-> s,
-	Map1T(CheckParam) [[ args ^ (s_body) : ty2 ]],
-	GetSpecifiedRetTy [[ retTy ^ (s) : ty ]],					// Constraint of the specified type
-    [[ body ^ (s_body) : ty]].									// Constraint of the infered type
+	Map1T(CheckParam) [[ args ^ (s_body) : argTys ]], // constraint of the arg types
+	GetSpecifiedRetTy [[ retTy ^ (s) : retTyp ]],	  // Constraint of the specified type
+    [[ body ^ (s_body) : retTyp]].					  // Constraint of the infered type
     
     
   // funtion parameters
@@ -108,17 +110,16 @@ rules
   [[ Bool(x) ^ (s) : Bool()]] :=
    true.
    
-  [[ BinaryOperation(PlusOp(), a,b) ^ (s) : ty ]] := [[ a ^ (s) : Int() ]], [[ b ^ (s) : Int() ]].
-  [[ BinaryOperation(MinOp() , a,b) ^ (s) : ty ]] := [[ a ^ (s) : Int() ]], [[ b ^ (s) : Int() ]].
-  [[ BinaryOperation(MultOp(), a,b) ^ (s) : ty ]] := [[ a ^ (s) : Int() ]], [[ b ^ (s) : Int() ]].
-  [[ BinaryOperation(ConcatOp(), a,b) ^ (s) : ty ]] := [[ a ^ (s) : c ]], [[ b ^ (s) : c ]].
-  [[ BinaryOperation(AndOp(), a,b) ^ (s) : ty ]] := [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
-  [[ BinaryOperation(OrOp(), a,b) ^ (s) : ty ]] := [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
+  [[ BinaryOperation(PlusOp(), a,b) ^ (s) : Int()  ]] := [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
+  [[ BinaryOperation(MinOp() , a,b) ^ (s) : Int()  ]] := [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
+  [[ BinaryOperation(MultOp(), a,b) ^ (s) : Int()  ]] := [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
+  [[ BinaryOperation(AndOp(),  a,b) ^ (s) : Bool() ]] := [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
+  [[ BinaryOperation(OrOp(),   a,b) ^ (s) : Bool() ]] := [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
+  [[ BinaryOperation(ConcatOp(), a,b) ^ (s) : ty ]] := [[ a ^ (s) : c ]], [[ b ^ (s) : c ]].          // todo
 
-  
-  [[ None() ^ (s) ]] :=
-    true.
-    
+  [[ Application(e1, e2) ^ (s) : (otherArgTys, funcRetTy) ]] := 
+    [[ e1 ^ (s) : ([argTy | otherArgTys], funcRetTy) ]],
+    [[ e2 ^ (s) : argTy ]].
   
     
     
