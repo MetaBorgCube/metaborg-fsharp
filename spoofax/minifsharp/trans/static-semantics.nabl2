@@ -34,6 +34,8 @@ rules
 
   	init ^ (s) := new s.
 
+	// Program Rules
+
   	[[ Program(expBlock, main) ^ (s) ]] :=
 		new mainscope,
 		new mainscopeinside,
@@ -59,6 +61,8 @@ rules
 		[[ exp ^ (s) : ty1 ]],
 		ProgramExp[[ next ^ (s, mainscope) : ty2 ]].
 	
+	// Expression Block Rules
+	
   	[[ ExprBlock(exp, None()) ^ (s) : ty]] := 
 		[[ exp ^ (s) : ty ]].
 	
@@ -66,8 +70,19 @@ rules
 		[[ exp ^ (s) : ty1 ]],
 		[[ next ^ (s) : ty ]].
 
+	// Let Rules
+
   	[[ Let(id, args, retTy, body) ^ (s, s') : (argTys, retTyp) ]] := 
 		Const{id} <- s',
+		Const{id} : (argTys, retTyp),
+		new s_body, 
+		s_body -P-> s,
+		Map1T(CheckParam) [[ args ^ (s_body) : argTys ]], // constraint of the arg types
+		GetSpecifiedRetTy [[ retTy ^ (s) : retTyp ]],	  // Constraint of the specified type
+	    [[ body ^ (s_body) : retTyp]].					  // Constraint of the infered type
+	    
+  	[[ LetRec(id, args, retTy, body) ^ (s, s') : (argTys, retTyp) ]] := 
+		Const{id} <- s,
 		Const{id} : (argTys, retTyp),
 		new s_body, 
 		s_body -P-> s,
@@ -103,10 +118,6 @@ rules
   
   	GetType [[ Integer() ^ (s) : Int() ]] := true.
   	GetType [[ Boolean() ^ (s) : Bool() ]] := true.
-    
-  	[[ LetRec(id, args, retTy, body) ^ (s, s') ]] := 
-		Const{id} <- s',
-	    [[ body ^ (s') ]].
 
   	[[ Identifier(id) ^ (s) : ty]] :=
 	  	Const{id} -> s, 
