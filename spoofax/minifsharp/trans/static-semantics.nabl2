@@ -9,6 +9,7 @@ signature
   	constructors
     	Int : Type
     	Bool : Type
+    	Unit : Type
     
   	name resolution
 
@@ -41,7 +42,7 @@ rules
 		new mainscopeinside,
 		mainscopeinside -P-> mainscope,
   		ProgramExp [[ expBlock ^ (s, mainscope) : ty]],
-  		[[ main ^ (mainscope,  mainscopeinside) : ty2]],
+  		[[ main ^ (mainscope,  mainscopeinside) : Unit()]],
   		true.
 
   	ProgramExp[[ Some(block @ ExprBlock(_, _)) ^ (s, mainscope) : ty ]] :=
@@ -149,6 +150,9 @@ rules
 	[[ BinaryOperation(AndOp(),  a,b) ^ (s) : Bool() ]] := [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
 	[[ BinaryOperation(OrOp(),   a,b) ^ (s) : Bool() ]] := [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
 	[[ BinaryOperation(ConcatOp(), a,b) ^ (s) : ty ]] := [[ a ^ (s) : c ]], [[ b ^ (s) : c ]].          // todo
+	
+	[[ Print(x) ^ (s) : Unit() ]] :=
+		[[ x ^ (s) : type ]].
 
 	// Application type
 
