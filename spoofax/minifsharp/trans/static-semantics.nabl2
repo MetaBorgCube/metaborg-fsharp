@@ -77,7 +77,7 @@ rules
     
   [[ LetConst(id, retTy, body) ^ (s, s') : ty ]] := 
 	Const{id} <- s',
-	Const{id} : (argTys, retTyp),
+	Const{id} : ty,
 	new s_body, 
 	s_body -P-> s,
 	GetSpecifiedRetTy [[ retTy ^ (s) : ty ]],	  // Constraint of the specified type
