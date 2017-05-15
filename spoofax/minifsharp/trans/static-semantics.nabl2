@@ -23,7 +23,13 @@ signature
 
     well-formedness
 	  (P* . I*)
-
+	  
+ functions
+  simplifyFunctionType : Type -> Type {
+  	([], retTy) -> retTy,
+  	x -> x
+  }
+    
 rules
 
   init ^ (s) := new s.
@@ -123,7 +129,8 @@ rules
   [[ BinaryOperation(OrOp(),   a,b) ^ (s) : Bool() ]] := [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
   [[ BinaryOperation(ConcatOp(), a,b) ^ (s) : ty ]] := [[ a ^ (s) : c ]], [[ b ^ (s) : c ]].          // todo
 
-  [[ Application(e1, e2) ^ (s) : (otherArgTys, funcRetTy) ]] := 
+  [[ Application(e1, e2) ^ (s) : ty ]] := 
+  	ty is simplifyFunctionType of (otherArgTys, funcRetTy),
     [[ e1 ^ (s) : ([argTy | otherArgTys], funcRetTy) ]],
     [[ e2 ^ (s) : argTy ]].
   
