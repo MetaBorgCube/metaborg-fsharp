@@ -122,8 +122,8 @@ rules
     	Map1UT [[ p ^ (s) : ty ]].
     	
     [[ PatternConcat(p, plist) ^ (s) : List(ty) ]] :=
-    	[[ p ^ (s) : ty ]],
-    	[[ plist ^ (s) : List(ty) ]].
+    	[[ p1 ^ (s) : ty ]],
+    	[[ p2 ^ (s) : ty ]].
     
   	// Function parameters
     

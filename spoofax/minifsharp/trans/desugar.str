@@ -35,6 +35,10 @@ constructors
 	NegativeOp					: BinaryOperand
 	NotOp						: BinaryOperand
 	
+	// Pattern Tuples
+
+	PatternTuple				: List(Pattern) -> Pattern
+	
 rules
 	
 	// Binary Operations
@@ -59,8 +63,7 @@ rules
 
 	// Tuple rules
 	
-	desugar: SugaredTupleType(a,b)	-> TupleType(<concat> [[a], b])
-	desugar: SugaredTupleExp(a,b)	-> TupleExp (<concat> [[a], b])
-
+	desugar: SugaredTupleType(a,b)		-> TupleType(<concat> [[a], b])
+	desugar: SugaredTupleExp(a,b)		-> TupleExp (<concat> [[a], b])
 	
-	
+	desugar: SugaredPatternTuple(a, b)	-> PatternTuple (<concat> [[a], b])

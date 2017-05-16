@@ -147,7 +147,7 @@ context-free syntax
 	Pattern.PatternList			=  <[<{Pattern ";"}*>]>
 	Pattern.PatternOr			= <<Pattern> | <Pattern>>											{layout(and(		ge(col(first(2)),col(first(1))), 
 																	 													ge(col(first(3)),col(first(1)))))}
-	Pattern.Tuple				= <<Pattern> , <{Pattern "*"}+>>									{layout(and(		ge(col(first(2)),col(first(1))), 
+	Pattern.SugaredPatternTuple	= <<Pattern> , <{Pattern ","}+>>									{layout(and(		ge(col(first(2)),col(first(1))), 
 																	 													ge(col(first(3)),col(first(1)))))}
 	// Pattern.TypeConst			= <<TypeConstIdentifier> <Const?>>
 	// Pattern.TypeConstIdentifier	= <<TypeConstIdentifier> <Identifier?>>
