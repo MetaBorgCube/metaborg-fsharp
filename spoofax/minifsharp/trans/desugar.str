@@ -23,21 +23,12 @@ constructors
 	AndOp						: BinaryOperand
 	OrOp						: BinaryOperand
 	
-	// Tuples
-
-	TupleType					: List(Type) -> Type
-	TupleExp					: List(Expression) -> Expression
-	
 	// Unary Operations
 	
 	UnaryOperation				: UnaryOperand * Expression -> Expression
 	
 	NegativeOp					: BinaryOperand
 	NotOp						: BinaryOperand
-	
-	// Pattern Tuples
-
-	PatternTuple				: List(Pattern) -> Pattern
 	
 rules
 	
@@ -60,10 +51,3 @@ rules
 	desugar: Rules(a, b)				-> <concat> [[a], b]
 	desugar: RulesEscaped(a, b)			-> <concat> [[a], b]
 	desugar: RuleFirst(a, b)			-> Rule(a, b)
-
-	// Tuple rules
-	
-	desugar: SugaredTupleType(a,b)		-> TupleType(<concat> [[a], b])
-	desugar: SugaredTupleExp(a,b)		-> TupleExp (<concat> [[a], b])
-	
-	desugar: SugaredPatternTuple(a, b)	-> PatternTuple (<concat> [[a], b])

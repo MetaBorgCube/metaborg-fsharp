@@ -68,7 +68,7 @@ context-free syntax
 	Expression.Const			= <<Const>>
 	Expression.Identifier		= <<Identifier>>
 	Expression.Application		= <<Expression> <Expression>> 										{layout(			gt(col(first(2)),col(first(1))))}	// second Expression must be on a righter column than first Expression
-	Expression.SugaredTupleExp	= <<Expression> , <{Expression ","}+>>
+	Expression.TupleExp			= <<Expression> , <Expression>>
 	Expression.List				= <[<{Expression ";"}*>]>
 	Expression.Plus				= <<Expression> + <Expression>>										{layout(and(		ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
 																														ge(col(first(2)),sub(col(first(1)), num("2")))))} // + is allowed to be two columns to the left
@@ -123,9 +123,9 @@ context-free syntax
 																	 													ge(col(first(4)),col(first(1))))}
 	
 	// Types
+	// TODO: TypeDefinition.TypeEscaped	= <<Type> | <{Type "|"}+>>
+	// TODO: TypeDefinition.Type			= <| <Type> | <{Type "|"}+>>
 	
-	// TypeDefinition.TypeEscaped	= <<Type> | <{Type "|"}+>>
-	// TypeDefinition.Type			= <| <Type> | <{Type "|"}+>>
 	TypeDefinition.SingleType	= <<Type>>
 	
 	Type.Integer				= <int>
@@ -140,6 +140,8 @@ context-free syntax
 	Type						= <(<Type>)>														{bracket}
 	
 	// Patterns
+	// TODO: Pattern.TypeConst			= <<TypeConstIdentifier> <Const?>>
+	// TODO: Pattern.TypeConstIdentifier	= <<TypeConstIdentifier> <Identifier?>>
 	
 	Pattern.Wildcard			= <_>
 	Pattern.PatternConcat		= <<Pattern> :: <Pattern>>											{layout(and(		ge(col(first(2)),col(first(1))), 
@@ -147,13 +149,11 @@ context-free syntax
 	Pattern.PatternList			=  <[<{Pattern ";"}*>]>
 	Pattern.PatternOr			= <<Pattern> | <Pattern>>											{layout(and(		ge(col(first(2)),col(first(1))), 
 																	 													ge(col(first(3)),col(first(1)))))}
-	Pattern.SugaredPatternTuple	= <<Pattern> , <{Pattern ","}+>>									{layout(and(		ge(col(first(2)),col(first(1))), 
+	Pattern.PatternTuple		= <<Pattern> , <Pattern>>											{layout(and(		ge(col(first(2)),col(first(1))), 
 																	 													ge(col(first(3)),col(first(1)))))}
-	// Pattern.TypeConst			= <<TypeConstIdentifier> <Const?>>
-	// Pattern.TypeConstIdentifier	= <<TypeConstIdentifier> <Identifier?>>
 	Pattern.Const				= <<Const>>
 	Pattern.Identifier			= <<Identifier>>
-	Pattern						= <(<Pattern>)>														{bracket}
+	Pattern						= <(<Pattern>)>														{bracket}			
 	
 syntax
 		
@@ -161,22 +161,31 @@ syntax
 	
 context-free priorities
 
-  { left:
-	Expression.Application
-  } > { left:
-    Expression.Plus
-	Expression.Min
-	Expression.Mult
-	Expression.Concat
-	Expression.And
-	Expression.Or
-  } > { left:
-	Expression.Negative
-	Expression.Not
-  } > { left: 
-    Expression.LetExp
-  } > { left:
-	Expression.Match
-  }
+  	{ left:
+		Expression.Application
+  	} > { left:
+	    Expression.Plus
+		Expression.Min
+		Expression.Mult
+		Expression.Concat
+		Expression.And
+		Expression.Or
+	} > { left:
+		Expression.Negative
+		Expression.Not
+	} > { left:
+		Expression.TupleExp
+	} > { left: 
+	    Expression.LetExp
+	} > { left:
+		Expression.Match
+	}
 	
+context-free priorities
+	
+	{ left:
+		Pattern.PatternTuple	
+	} > { left:
+		Pattern.PatternConcat
+	}
 	
