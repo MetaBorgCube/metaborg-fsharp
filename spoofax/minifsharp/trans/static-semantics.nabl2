@@ -113,6 +113,10 @@ rules
     
     [[ Wildcard() ^ (s) : ty ]].
     
+    [[ PatternOr(p1, p2) ^ (s) : ty ]] :=
+    	[[ p1 ^ (s) : ty ]],
+    	[[ p2 ^ (s) : ty ]].
+    
   	// Function parameters
     
   	CheckParam [[ Identifier(id) ^ (s) : ty ]] := 
