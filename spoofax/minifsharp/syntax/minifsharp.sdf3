@@ -53,7 +53,11 @@ context-free start-symbols
 
 context-free syntax
   
+	// Program
+  
 	Program.Program				= <<ExprBlock?> [\<EntryPoint\>] <Let>>
+	
+	// Expressions
 	
 	Expression.LetExp			= <<Let>>
 	Expression.Match			= <match <Expression> with <Rules>>
@@ -92,16 +96,22 @@ context-free syntax
 	
 	ExprBlock.ExprBlock   		= <<ExprNewline> <ExprBlock?>> 										{layout(eq(			col(first(1)),col(first(2))))}		// all Expressions must be on the same column
 	
+	// Integers and Booleans
+	
 	Const.Integer				= <<Integer>>
 	Const.Bool					= <<Boolean>>
 	
 	Boolean.True				= <true>
 	Boolean.False				= <false>
 	
+	// Return types and Arguments
+	
 	ReturnType.ReturnType		= <: <Type>>
 	
 	Argument.Identifier			= <<Identifier>>
 	Argument.TypedIdentifier	= <( <Identifier> : <Type> )>
+	
+	// Rules
 	
 	Rules.RulesEscaped			= <<RuleFirst> <Rule*>>												{layout(			ge(col(first(2)),col(first(1))))}
 	Rules.Rules					= <<Rule> <Rule*>>													{layout(			ge(col(first(2)),col(first(1))))}
@@ -111,6 +121,8 @@ context-free syntax
 	Rule.Rule					= <| <Pattern> -\> <Expression>> 									{layout(and(and(	ge(col(first(2)),col(first(1))), 
 																	 													ge(col(first(3)),col(first(1))))),
 																	 													ge(col(first(4)),col(first(1))))}
+	
+	// Types
 	
 	// TypeDefinition.TypeEscaped	= <<Type> | <{Type "|"}+>>
 	// TypeDefinition.Type			= <| <Type> | <{Type "|"}+>>
@@ -127,10 +139,12 @@ context-free syntax
 																	 													gt(col(first(3)),col(first(1)))))}
 	Type						= <(<Type>)>														{bracket}
 	
+	// Patterns
+	
 	Pattern.Wildcard			= <_>
 	Pattern.Concat				= <<Pattern> :: <Pattern>>											{layout(and(		ge(col(first(2)),col(first(1))), 
 																	 													ge(col(first(3)),col(first(1)))))}
-	Pattern.List				= <<ListPattern>>
+	Pattern.PatternList			=  <[<{Pattern ";"}*>]>
 	Pattern.PatternOr			= <<Pattern> | <Pattern>>											{layout(and(		ge(col(first(2)),col(first(1))), 
 																	 													ge(col(first(3)),col(first(1)))))}
 	Pattern.Tuple				= <<Pattern> , <{Pattern "*"}+>>									{layout(and(		ge(col(first(2)),col(first(1))), 
@@ -140,8 +154,6 @@ context-free syntax
 	Pattern.Const				= <<Const>>
 	Pattern.Identifier			= <<Identifier>>
 	Pattern						= <(<Pattern>)>														{bracket}
-	
-	ListPattern.ListPattern		= <[<{Pattern ";"}*>]>
 	
 syntax
 		
