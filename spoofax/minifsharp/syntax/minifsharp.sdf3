@@ -142,7 +142,7 @@ context-free syntax
 	// Patterns
 	
 	Pattern.Wildcard			= <_>
-	Pattern.Concat				= <<Pattern> :: <Pattern>>											{layout(and(		ge(col(first(2)),col(first(1))), 
+	Pattern.PatternConcat		= <<Pattern> :: <Pattern>>											{layout(and(		ge(col(first(2)),col(first(1))), 
 																	 													ge(col(first(3)),col(first(1)))))}
 	Pattern.PatternList			=  <[<{Pattern ";"}*>]>
 	Pattern.PatternOr			= <<Pattern> | <Pattern>>											{layout(and(		ge(col(first(2)),col(first(1))), 

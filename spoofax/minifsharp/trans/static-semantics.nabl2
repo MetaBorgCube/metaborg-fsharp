@@ -120,6 +120,10 @@ rules
     	
     [[ PatternList(p) ^ (s) : List(ty) ]] :=
     	Map1UT [[ p ^ (s) : ty ]].
+    	
+    [[ PatternConcat(p, plist) ^ (s) : List(ty) ]] :=
+    	[[ p ^ (s) : ty ]],
+    	[[ plist ^ (s) : List(ty) ]].
     
   	// Function parameters
     
@@ -139,8 +143,8 @@ rules
    
   	// Get specified type
   
-  	GetType [[ Integer() ^ (s) : Int() ]] := true.
-  	GetType [[ Boolean() ^ (s) : Bool() ]] := true.
+  	GetType [[ Integer() ^ (s) : Int() ]].
+  	GetType [[ Boolean() ^ (s) : Bool() ]].
 
 	// Expressions and Values
 	
@@ -152,18 +156,16 @@ rules
   	[[ Const(v) ^ (s) : ty]] :=
     	[[ v ^ (s) : ty]].
   
-  	[[ Integer(x) ^ (s) : Int()]] :=
-  		true.
+  	[[ Integer(x) ^ (s) : Int()]].
    
-  	[[ Bool(x) ^ (s) : Bool()]] :=
-   		true.
+  	[[ Bool(x) ^ (s) : Bool()]].
    
-	[[ BinaryOperation(PlusOp(), a,b) ^ (s) : Int()  ]] := [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
-	[[ BinaryOperation(MinOp() , a,b) ^ (s) : Int()  ]] := [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
-	[[ BinaryOperation(MultOp(), a,b) ^ (s) : Int()  ]] := [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
-	[[ BinaryOperation(AndOp(),  a,b) ^ (s) : Bool() ]] := [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
-	[[ BinaryOperation(OrOp(),   a,b) ^ (s) : Bool() ]] := [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
-	[[ BinaryOperation(ConcatOp(), a,b) ^ (s) : ty ]] := [[ a ^ (s) : c ]], [[ b ^ (s) : c ]].          // TODO
+	[[ BinaryOperation(PlusOp(), 	a,b) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
+	[[ BinaryOperation(MinOp() , 	a,b) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
+	[[ BinaryOperation(MultOp(), 	a,b) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
+	[[ BinaryOperation(AndOp(),  	a,b) ^ (s) : Bool() ]] 		:= [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
+	[[ BinaryOperation(OrOp(),   	a,b) ^ (s) : Bool() ]] 		:= [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
+	[[ BinaryOperation(ConcatOp(), 	a,b) ^ (s) : List(ty) ]] 	:= [[ a ^ (s) : ty ]], 	   [[ b ^ (s) : List(ty) ]].
 	
 	[[ Print(x) ^ (s) : Unit() ]] :=
 		[[ x ^ (s) : type ]].
