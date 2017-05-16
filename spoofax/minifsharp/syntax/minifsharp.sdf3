@@ -116,9 +116,9 @@ context-free syntax
 	Rules.RulesEscaped			= <<RuleFirst> <Rule*>>												{layout(			ge(col(first(2)),col(first(1))))}
 	Rules.Rules					= <<Rule> <Rule*>>													{layout(			ge(col(first(2)),col(first(1))))}
 	
-	RuleFirst.RuleFirst			= <<Pattern> -\> <Expression>> 										{layout(and(		ge(col(first(2)),col(first(1))), 
+	RuleFirst.RuleFirst			= <<OuterPattern> -\> <Expression>> 										{layout(and(		ge(col(first(2)),col(first(1))), 
 																	 													ge(col(first(3)),col(first(1)))))}
-	Rule.Rule					= <| <Pattern> -\> <Expression>> 									{layout(and(and(	ge(col(first(2)),col(first(1))), 
+	Rule.Rule					= <| <OuterPattern> -\> <Expression>> 									{layout(and(and(	ge(col(first(2)),col(first(1))), 
 																	 													ge(col(first(3)),col(first(1))))),
 																	 													ge(col(first(4)),col(first(1))))}
 	
@@ -143,17 +143,23 @@ context-free syntax
 	// TODO: Pattern.TypeConst			= <<TypeConstIdentifier> <Const?>>
 	// TODO: Pattern.TypeConstIdentifier	= <<TypeConstIdentifier> <Identifier?>>
 	
-	Pattern.Wildcard			= <_>
-	Pattern.PatternConcat		= <<Pattern> :: <Pattern>>											{layout(and(		ge(col(first(2)),col(first(1))), 
+	
+	OuterPattern                    = Pattern
+	OuterPattern.OuterPatternTuple  = RawPatternTuple
+	
+	RawPatternTuple.RawPatternTuple = <<Pattern> , <{Pattern ","}+>> 								{layout(and(		ge(col(first(2)),col(first(1))), 
+																														ge(col(first(3)),col(first(1)))))}
+	
+	Pattern.Wildcard			    = <_>
+	Pattern.PatternConcat			= <<Pattern> :: <Pattern>>										{layout(and(		ge(col(first(2)),col(first(1))), 
 																	 													ge(col(first(3)),col(first(1)))))}
-	Pattern.PatternList			=  <[<{Pattern ";"}*>]>
-	Pattern.PatternOr			= <<Pattern> | <Pattern>>											{layout(and(		ge(col(first(2)),col(first(1))), 
+	Pattern.PatternList				=  <[<{Pattern ";"}*>]>
+	Pattern.PatternOr				= <<Pattern> | <Pattern>>										{layout(and(		ge(col(first(2)),col(first(1))), 
 																	 													ge(col(first(3)),col(first(1)))))}
-	Pattern.PatternTuple		= <<Pattern> , <Pattern>>											{layout(and(		ge(col(first(2)),col(first(1))), 
-																	 													ge(col(first(3)),col(first(1)))))}
-	Pattern.Const				= <<Const>>
-	Pattern.Identifier			= <<Identifier>>
-	Pattern						= <(<Pattern>)>														{bracket}			
+									
+	Pattern.Const					= <<Const>>
+	Pattern.Identifier				= <<Identifier>>
+	Pattern.NestedPatternTuple		= <(<RawPatternTuple>)>		
 	
 syntax
 		
@@ -181,11 +187,4 @@ context-free priorities
 		Expression.Match
 	}
 	
-context-free priorities
-	
-	{ left:
-		Pattern.PatternTuple	
-	} > { left:
-		Pattern.PatternConcat
-	}
 	
