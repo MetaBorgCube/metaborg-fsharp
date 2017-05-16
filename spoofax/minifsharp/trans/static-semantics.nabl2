@@ -9,6 +9,7 @@ signature
   	constructors
     	Int : Type
     	Bool : Type
+    	List : Type -> Type
     	Unit : Type
     
   	name resolution
@@ -103,7 +104,7 @@ rules
     
     [[ Match(id, rules) ^ (s) : ty ]] :=
     	[[ id ^ (s) : idType ]],
-    	Map2UT[[ rules ^ (s, idType) : ty ]].
+    	Map2UT [[ rules ^ (s, idType) : ty ]].
     	
     [[ Rule(pattern, body) ^ (s, idType) : ty ]] :=
     	[[ pattern ^ (s) : idType ]],
@@ -116,6 +117,9 @@ rules
     [[ PatternOr(p1, p2) ^ (s) : ty ]] :=
     	[[ p1 ^ (s) : ty ]],
     	[[ p2 ^ (s) : ty ]].
+    	
+    [[ PatternList(p) ^ (s) : List(ty) ]] :=
+    	Map1UT [[ p ^ (s) : ty ]].
     
   	// Function parameters
     
@@ -138,6 +142,8 @@ rules
   	GetType [[ Integer() ^ (s) : Int() ]] := true.
   	GetType [[ Boolean() ^ (s) : Bool() ]] := true.
 
+	// Expressions and Values
+	
   	[[ Identifier(id) ^ (s) : ty]] :=
 	  	Const{id} -> s, 
 	  	Const{id} |-> d,
@@ -161,6 +167,9 @@ rules
 	
 	[[ Print(x) ^ (s) : Unit() ]] :=
 		[[ x ^ (s) : type ]].
+		
+	[[ List(x) ^ (s) : List(ty) ]] :=
+		Map1UT [[ x ^ (s) : ty ]].
 
 	// Application type
 
@@ -170,7 +179,16 @@ rules
 	    [[ e2 ^ (s) : argTy ]].
   
   
-  	// Custom Map rule for unappended types
+  	// Custom Map rules for unappended types
+  	
+  	Map1UT[[ xs ^ (s1) : ty ]] := 
+  		Map1UT(default)[[ xs ^ (s1) : ty ]].
+	
+	Map1UT(X)[[ [x|xs] ^ (s1) : ty ]] :=
+		X[[ x ^ (s1) : ty ]],
+		Map1UT(X)[[ xs ^ (s1) : ty ]].
+
+	Map1UT(X)[[ [] ^ (s1) : ty ]].
   	
   	Map2UT[[ xs ^ (s1,s2) : ty ]] := 
   		Map2UT(default)[[ xs ^ (s1,s2) : ty ]].
