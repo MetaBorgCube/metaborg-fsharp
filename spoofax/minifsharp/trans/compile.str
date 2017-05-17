@@ -18,24 +18,78 @@ rules
 	    filename := <guarantee-extension(|$[cil])> path;
 		result := <desugar-all; program-to-cil; pp-debug> ast
 
-	program-to-cil: Program(e,Let(a,b,c,d)) -> ProgramCil(Method(a, <program-to-cil> d), <nonEntryPoints-to-cil> e, a)
+	program-to-cil: Program(e,Let(a,b,c,d)) -> ProgramCil(<concat> [[Method(a, [], <program-to-cil> d)], <nonEntryPoints-to-cil> e], a)
 	
-	program-to-cil: Application(Identifier(name),b) -> <concat> [[NewObj(name)], <program-to-cil> b, [CallVirt()]]
+	program-to-cil: Application(Identifier(name),b) -> <concat> [[NewObj(<concat-strings> [name, "_0"])], <program-to-cil> b, [CallVirt()]]
 	
-	program-to-cil: ExprBlock(exp, None()) -> <debuge; program-to-cil> exp
-	program-to-cil: ExprBlock(exp, Some(next)) -> <debug0; program-to-cil> next // only last expression actually does something.. i think
+	program-to-cil: ExprBlock(exp, None()) -> <program-to-cil> exp
+	program-to-cil: ExprBlock(exp, Some(next)) -> <program-to-cil> next // only last expression actually does something.. i think
 	
 	program-to-cil: Const(Integer(x)) -> [Ldc(x)]
-	program-to-cil: BinaryOperation(op, a, b) -> <debug1; concat> [<program-to-cil> a, <program-to-cil> b, <debug2; binop-to-cil> op]
+	program-to-cil: BinaryOperation(op, a, b) -> <concat> [<program-to-cil> a, <program-to-cil> b, <binop-to-cil> op]
 	
-	program-to-cil: Let(a,b,c,d) -> [FunctionDefinition(a, <debugd; program-to-cil> d)]
+	program-to-cil: a @ Let(name,args,retTy,body) -> <concat> [[Method(name, <map(\x -> "int32"\)> args, <program-to-cil> body)], <curriedFunction-to-cil> ([], a)]
+
+	program-to-cil: LetExp(a@Let(_,_,_,_)) -> <program-to-cil> a
+
+//	curriedFunction-to-cil: Let(name, [argHead | []], retTy, body) -> []
+	
+	curriedFunction-to-cil: (processed, Let(name, [], retTy, body)) -> []
+	
+	curriedFunction-to-cil: (processed, Let(name, [argHead | argTail], retTy, body)) -> <concat> [[FunctionDefinition(
+		<concat-strings> [name, "_", <length;int-to-string> processed],
+		<map(generateField)> processed,
+		<generateConstructor> (name, processed, "[FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2<int32,int32>"),
+		<generateInvokeImplementation> (name, processed, argTail)
+	)],
+	<curriedFunction-to-cil> (<concat> [processed, [argHead]], Let(name, argTail, retTy, body))
+	]
+	
+	// no more args to process; this is the final call; don't return a new function, but return the function result.
+	generateInvokeImplementation: (className, processed, []) -> <concat> [
+		<mapconcat(\Identifier(x) -> [LoadArg("0"), LoadField("int32", className, x)] \)> processed,
+		[LoadArg("1"), Call("int32", <concat-strings> ["get_", className], <map(\x -> "int32"\)> [Identifier("q") | processed]), Ret()] // hack: add current param
+	]
+	
+	generateInvokeImplementation: (className, processed, nextArgs) -> <concat> [
+		<mapconcat(\Identifier(x) -> [LoadArg("0"), LoadField("int32", className, x)] \)> processed,
+		[LoadArg("1"), NewObj(<concat-strings> [className, "_", <addS> ("1", <length;int-to-string> processed)]), Ret()]
+	]
+//	      load all fields
+//      load param
+//      call ctor
+
+	generateField: Identifier(x) -> Field("int32", x)
+//	generateParam: 
+
+	generateFieldInit: (idx, className, []) -> []
+	generateFieldInit: (idx, className, [Identifier(hd) | tl]) -> <concat>[
+		[
+			LoadArg("0"), 
+			LoadArg(idx),
+			StoreField("int32", className, hd)
+		],
+		<generateFieldInit> (<addS>(idx, "1"), className, tl)
+		]
+
+	generateBaseInit: baseType -> <concat>[[LoadArg("0")], [CallConstructor(baseType)]]
+	generateConstructorParamCopy: x -> []
+	generateConstructor: (className, params, baseType) -> Ctor(
+								<map(\Identifier(y) -> Param("int32", y) \)> params,
+								<concat> [
+									<generateBaseInit> baseType,
+									<generateFieldInit> ("1", className, params),
+									[Ret()]
+								] 
+								)
+
 	
 	binop-to-cil: PlusOp() -> [Add()]
 	binop-to-cil: MinOp()  -> [Sub()]
 	binop-to-cil: MultOp() -> [Mul()]
 	
 	nonEntryPoints-to-cil: None() -> []
-	nonEntryPoints-to-cil: Some(x) -> <debuga; listifyExprBlock; debugb; map(program-to-cil); debugc; concat; debugq> x
+	nonEntryPoints-to-cil: Some(x) -> <listifyExprBlock; map(program-to-cil); concat> x
 	
 	listifyExprBlock: ExprBlock(exp, Some(next)) -> <concat> [[exp], <listifyExprBlock> next]
 	listifyExprBlock: ExprBlock(exp, None()) -> [exp]
