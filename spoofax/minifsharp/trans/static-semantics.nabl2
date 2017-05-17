@@ -126,17 +126,8 @@ rules
     	[[ p1 ^ (s) : ty ]],
     	[[ p2 ^ (s) : ty ]].
     	
-    [[ PatternTuple(p, plist @ PatternTuple(_, _)) ^ (s) : Tuple([a | b]) ]] :=
-    	[[ p ^ (s) : a ]],
-    	[[ plist ^ (s) : Tuple(b) ]].
-    	
-    [[ PatternTuple(plist @ PatternTuple(_, _), p) ^ (s) : Tuple([a | b]) ]] :=
-    	[[ p ^ (s) : a ]],
-    	[[ plist ^ (s) : Tuple(b) ]].
-    	
-    [[ PatternTuple(p1, p2) ^ (s) : Tuple([a | [b]]) ]] :=
-    	[[ p1 ^ (s) : a ]],
-    	[[ p2 ^ (s) : b ]].
+	[[ PatternTuple(plist) ^ (s) : Tuple(ty) ]] :=
+		Map1T [[ plist ^ (s) : ty]].
     
   	// Function parameters
     
