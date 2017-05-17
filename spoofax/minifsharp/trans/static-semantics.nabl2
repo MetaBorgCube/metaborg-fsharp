@@ -111,7 +111,7 @@ rules
     	[[ pattern ^ (s) : idType ]],
     	[[ body ^ (s) : ty ]].
     	
-    // TODO: Pattern Rules
+    // Pattern Rules
     
     [[ Wildcard() ^ (s) : ty ]].
     
@@ -128,6 +128,24 @@ rules
     	
 	[[ PatternTuple(plist) ^ (s) : Tuple(ty) ]] :=
 		Map1T [[ plist ^ (s) : ty]].
+		
+	// Type parameters
+    
+    [[ TypeDefinition(id, def) ^ (s) : ty ]] :=
+		[[ def ^ (s) : ty ]],
+		Type{id} <- s,
+		Type{id} : ty.
+    	
+    [[ SingleType(t) ^ (s) : ty ]] :=
+		[[ t ^ (s) : ty ]].
+    	
+    [[ IntegerType() ^ (s) : Int() ]].
+    [[ BooleanType() ^ (s) : Bool() ]].
+    [[ ListType(t) ^ (s) : List(ty) ]] :=
+    	[[ t ^ (s) : ty ]].
+        	
+	[[ TypeTuple(plist) ^ (s) : Tuple(ty) ]] :=
+		Map1T [[ plist ^ (s) : ty]].
     
   	// Function parameters
     
@@ -135,7 +153,7 @@ rules
 	    Const{id} <- s,
 	    Const{id} : ty.
   	CheckParam [[ TypedIdentifier(id, typ) ^ (s) : ty ]] := 
-  	GetType [[ typ ^ (s) : ty ]],
+  		[[ typ ^ (s) : ty ]],
 	  	Const{id} <- s,
 	  	Const{id} : ty.
   
@@ -143,12 +161,7 @@ rules
    
 	GetSpecifiedRetTy [[ None() ^ (s) : ty ]] := true.		 	// No return type specified; no additional constraint
 	GetSpecifiedRetTy [[ Some(ReturnType(x)) ^ (s) : ty ]] :=  	// Additional constraint: the function should return the specified type
-  		GetType [[ x ^ (s) : ty ]].
-   
-  	// Get specified type
-  
-  	GetType [[ Integer() ^ (s) : Int() ]].
-  	GetType [[ Boolean() ^ (s) : Bool() ]].
+  		[[ x ^ (s) : ty ]].
 
 	// Expressions and Values
 	
@@ -162,7 +175,8 @@ rules
   
   	[[ Integer(x) ^ (s) : Int()]].
    
-  	[[ Bool(x) ^ (s) : Bool()]].
+  	[[ True() ^ (s) : Bool()]].
+  	[[ False() ^ (s) : Bool()]].
    
 	[[ BinaryOperation(PlusOp(), 	a,b) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
 	[[ BinaryOperation(MinOp() , 	a,b) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].

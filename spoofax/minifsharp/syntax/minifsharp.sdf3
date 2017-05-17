@@ -106,19 +106,19 @@ context-free syntax
 	
 	// Return types and Arguments
 	
-	ReturnType.ReturnType		= <: <Type>>
+	ReturnType.ReturnType		= <: <OuterType>>
 	
 	Argument.Identifier			= <<Identifier>>
-	Argument.TypedIdentifier	= <( <Identifier> : <Type> )>
+	Argument.TypedIdentifier	= <( <Identifier> : <OuterType> )>
 	
 	// Rules
 	
 	Rules.RulesEscaped			= <<RuleFirst> <Rule*>>												{layout(			ge(col(first(2)),col(first(1))))}
 	Rules.Rules					= <<Rule> <Rule*>>													{layout(			ge(col(first(2)),col(first(1))))}
 	
-	RuleFirst.RuleFirst			= <<OuterPattern> -\> <Expression>> 										{layout(and(		ge(col(first(2)),col(first(1))), 
+	RuleFirst.RuleFirst			= <<OuterPattern> -\> <Expression>> 								{layout(and(		ge(col(first(2)),col(first(1))), 
 																	 													ge(col(first(3)),col(first(1)))))}
-	Rule.Rule					= <| <OuterPattern> -\> <Expression>> 									{layout(and(and(	ge(col(first(2)),col(first(1))), 
+	Rule.Rule					= <| <OuterPattern> -\> <Expression>> 								{layout(and(and(	ge(col(first(2)),col(first(1))), 
 																	 													ge(col(first(3)),col(first(1))))),
 																	 													ge(col(first(4)),col(first(1))))}
 	
@@ -126,23 +126,26 @@ context-free syntax
 	// TODO: TypeDefinition.TypeEscaped	= <<Type> | <{Type "|"}+>>
 	// TODO: TypeDefinition.Type			= <| <Type> | <{Type "|"}+>>
 	
-	TypeDefinition.SingleType	= <<Type>>
+	TypeDefinition.SingleType	= <<OuterType>>
 	
-	Type.Integer				= <int>
-	Type.Boolean				= <bool>
+	OuterType                   = Type
+	OuterType.OuterTypeTuple  	= RawTypeTuple
+	
+	RawTypeTuple.RawTypeTuple 	= <<Type> * <{Type "*"}+>> 		
+	
+	Type.IntegerType			= <int>
+	Type.BooleanType			= <bool>
 	Type.Identifier				= <<Identifier>>
 	Type.TypeIdentifier			= <<TypeConstIdentifier>>
 	Type.ListType				= <<Type> list>														{layout(			gt(col(first(2)),col(first(1))))}
 	Type.TypedIdentifier		= <<TypeConstIdentifier> of <Type>>									{layout(and(		gt(col(first(2)),col(first(1))), 
 																	 													gt(col(first(3)),col(first(1)))))}
-	Type.SugaredTupleType 		= <<Type> * <{Type "*"}+>>											{layout(and(		gt(col(first(2)),col(first(1))), 
-																	 													gt(col(first(3)),col(first(1)))))}
 	Type						= <(<Type>)>														{bracket}
+	Type.NestedTypeTuple		= <(<RawTypeTuple>)>		
 	
 	// Patterns
 	// TODO: Pattern.TypeConst			= <<TypeConstIdentifier> <Const?>>
 	// TODO: Pattern.TypeConstIdentifier	= <<TypeConstIdentifier> <Identifier?>>
-	
 	
 	OuterPattern                    = Pattern
 	OuterPattern.OuterPatternTuple  = RawPatternTuple

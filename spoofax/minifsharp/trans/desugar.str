@@ -8,7 +8,8 @@ sorts
 
 	BinaryOperation	BinaryOperand
 	UnaryOperation	UnaryOperand
-	PatternTuple
+	PatternTuple	TypeTuple
+	
 constructors
 	
 	// Binary Operations
@@ -33,6 +34,7 @@ constructors
 	// Tuple
 	
 	PatternTuple				: PatternTuple -> Pattern
+	TypeTuple					: TypeTuple -> Type
 	
 rules
 	
@@ -56,7 +58,9 @@ rules
 	desugar: RulesEscaped(a, b)			-> <concat> [[a], b]
 	desugar: RuleFirst(a, b)			-> Rule(a, b)
 	
-	// Tuple:
+	// Tuple
 	
 	desugar: OuterPatternTuple(RawPatternTuple(a,b)) 		-> PatternTuple(<concat> [[a], b])
 	desugar: NestedPatternTuple(RawPatternTuple(a,b)) 		-> PatternTuple(<concat> [[a], b])
+	desugar: OuterTypeTuple(RawTypeTuple(a,b)) 				-> TypeTuple(<concat> [[a], b])
+	desugar: NestedTypeTuple(RawTypeTuple(a,b)) 			-> TypeTuple(<concat> [[a], b])
