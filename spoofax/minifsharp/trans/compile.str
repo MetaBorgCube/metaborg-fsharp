@@ -20,7 +20,9 @@ rules
 
 	program-to-cil: Program(e,Let(a,b,c,d)) -> ProgramCil(<concat> [[Method(a, [], <program-to-cil> d)], <nonEntryPoints-to-cil> e], a)
 	
-	program-to-cil: Application(Identifier(name),b) -> <concat> [[NewObj(<concat-strings> [name, "_0"])], <program-to-cil> b, [CallVirt()]]
+	program-to-cil: Application(a,b) -> <debug2;concat> [<debug0;program-to-cil;debug1> a, <program-to-cil> b, [CallVirt()]]
+	
+	program-to-cil: Identifier(name) -> [NewObj(<concat-strings> [name, "_0"], [])]
 	
 	program-to-cil: ExprBlock(exp, None()) -> <program-to-cil> exp
 	program-to-cil: ExprBlock(exp, Some(next)) -> <program-to-cil> next // only last expression actually does something.. i think
@@ -30,16 +32,20 @@ rules
 	
 	program-to-cil: a @ Let(name,args,retTy,body) -> <concat> [[Method(name, <map(\x -> "int32"\)> args, <program-to-cil> body)], <curriedFunction-to-cil> ([], a)]
 
-	program-to-cil: LetExp(a@Let(_,_,_,_)) -> <program-to-cil> a
+	program-to-cil: LetExp(a@Let(_,_,_,_)) -> <debuga;program-to-cil;debugb> a
 
 //	curriedFunction-to-cil: Let(name, [argHead | []], retTy, body) -> []
+ 
+
+	getIdentifierName: Identifier(x) -> x
+	getIdentifierName: TypedIdentifier(x, _) -> x
 	
 	curriedFunction-to-cil: (processed, Let(name, [], retTy, body)) -> []
 	
 	curriedFunction-to-cil: (processed, Let(name, [argHead | argTail], retTy, body)) -> <concat> [[FunctionDefinition(
 		<concat-strings> [name, "_", <length;int-to-string> processed],
 		<map(generateField)> processed,
-		<generateConstructor> (name, processed, "[FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2<int32,int32>"),
+		<generateConstructor> (<concat-strings> [name, "_", <length;int-to-string> processed], processed, "[FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2<int32,int32>"),
 		<generateInvokeImplementation> (name, processed, argTail)
 	)],
 	<curriedFunction-to-cil> (<concat> [processed, [argHead]], Let(name, argTail, retTy, body))
@@ -47,27 +53,27 @@ rules
 	
 	// no more args to process; this is the final call; don't return a new function, but return the function result.
 	generateInvokeImplementation: (className, processed, []) -> <concat> [
-		<mapconcat(\Identifier(x) -> [LoadArg("0"), LoadField("int32", className, x)] \)> processed,
+		<mapconcat(\x -> [LoadArg("0"), LoadField("int32", <concat-strings> [className, "_", <length;int-to-string> processed], <getIdentifierName>x)] \)> processed,
 		[LoadArg("1"), Call("int32", <concat-strings> ["get_", className], <map(\x -> "int32"\)> [Identifier("q") | processed]), Ret()] // hack: add current param
 	]
 	
 	generateInvokeImplementation: (className, processed, nextArgs) -> <concat> [
-		<mapconcat(\Identifier(x) -> [LoadArg("0"), LoadField("int32", className, x)] \)> processed,
-		[LoadArg("1"), NewObj(<concat-strings> [className, "_", <addS> ("1", <length;int-to-string> processed)]), Ret()]
-	]
-//	      load all fields
-//      load param
-//      call ctor
-
-	generateField: Identifier(x) -> Field("int32", x)
+		<mapconcat(\x -> [LoadArg("0"), LoadField("int32", className, <getIdentifierName> x)] \)> processed,
+		[LoadArg("1"), NewObj(<concat-strings> [className, "_", <addS> ("1", <length;int-to-string> processed)], <map(\x -> "int32"\)> [Identifier("bla") | processed]), Ret()] // dirty hack
+ 	]
+//	      load all fields 
+//      load param  
+//      call ctor 
+ 
+	generateField: x -> Field("int32", <getIdentifierName> x)
 //	generateParam: 
 
 	generateFieldInit: (idx, className, []) -> []
-	generateFieldInit: (idx, className, [Identifier(hd) | tl]) -> <concat>[
+	generateFieldInit: (idx, className, [hd | tl]) -> <concat>[
 		[
-			LoadArg("0"), 
+			LoadArg("0"),
 			LoadArg(idx),
-			StoreField("int32", className, hd)
+			StoreField("int32", className, <getIdentifierName> hd)
 		],
 		<generateFieldInit> (<addS>(idx, "1"), className, tl)
 		]
@@ -75,7 +81,7 @@ rules
 	generateBaseInit: baseType -> <concat>[[LoadArg("0")], [CallConstructor(baseType)]]
 	generateConstructorParamCopy: x -> []
 	generateConstructor: (className, params, baseType) -> Ctor(
-								<map(\Identifier(y) -> Param("int32", y) \)> params,
+								<map(\y -> Param("int32", <getIdentifierName> y) \)> params,
 								<concat> [
 									<generateBaseInit> baseType,
 									<generateFieldInit> ("1", className, params),

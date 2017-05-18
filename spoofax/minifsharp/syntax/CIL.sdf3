@@ -122,7 +122,7 @@ Instruction.LoadArg = <ldarg.<Int>>
 Instruction.StoreField = <stfld <Type> Test1/<Name>::<Name>>
 Instruction.LoadField = <ldfld <Type> Test1/<Name>::<Name>>
 
-Instruction.NewObj = <newobj instance void class Test1/<Name>::'.ctor'()>
+Instruction.NewObj = <newobj instance void class Test1/<Name>::'.ctor'( <{Type ","}*> )>
 Instruction.Call = <call <Type> class Test1::<Name>( <{Type ","}*> )>
 Instruction.CallVirt = <callvirt instance !1 class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2\<int32, int32\>::Invoke(!0)>
 Instruction.CallConstructor = <call instance void class <LiberalString>::'.ctor'()>
