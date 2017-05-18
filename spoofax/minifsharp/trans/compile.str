@@ -5,6 +5,7 @@ imports
   libstratego-gpp
   libspoofax/stratego/debug
   src-gen/signatures/-
+  nabl2/api
   trans/pp
   trans/desugar
   trans/minifsharp
@@ -16,11 +17,16 @@ rules
 	
 	show-cil: (selected, _, ast, path, project-path) -> (filename, result) with
 	    filename := <guarantee-extension(|$[cil])> path;
-		result := <desugar-all; program-to-cil; pp-debug> ast
+	      a         := <nabl2-get-ast-analysis; debug1> ast;
+		result := <debug0; desugar-all; program-to-cil; pp-debug> ast
 
 	program-to-cil: Program(e,Let(a,b,c,d)) -> ProgramCil(<concat> [[Method(a, [], <program-to-cil> d)], <nonEntryPoints-to-cil> e], a)
 	
-	program-to-cil: Application(a,b) -> <debug2;concat> [<debug0;program-to-cil;debug1> a, <program-to-cil> b, [CallVirt("placeholder")]]
+	program-to-cil: z@Application(a,b) -> result with
+	(argTy, retTy) := <nabl2-get-ast-type;debug9> a;
+	result :=  <debug2;concat> [<debug0;program-to-cil;debug1> a, <program-to-cil> b, [CallVirt(<getCurriedType> (retTy, argTy))]]
+	
+	
 	
 	program-to-cil: Identifier(name) -> [NewObj(<concat-strings> [name, "_0"], [])]
 	
@@ -60,7 +66,7 @@ rules
 	]
 	
 	generateInvokeImplementation: (className, processed, nextArgs) -> <concat> [
-		<mapconcat(\x -> [LoadArg("0"), LoadField("int32", className, <getIdentifierName> x)] \)> processed,
+		<mapconcat(\x -> [LoadArg("0"), LoadField("int32", <concat-strings> [className, "_", <length;int-to-string> processed], <getIdentifierName> x)] \)> processed,
 		[LoadArg("1"), NewObj(<concat-strings> [className, "_", <addS> ("1", <length;int-to-string> processed)], <map(\x -> "int32"\)> [Identifier("bla") | processed]), Ret()] // dirty hack
  	]
 //	      load all fields 
