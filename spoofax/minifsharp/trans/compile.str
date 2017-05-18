@@ -20,7 +20,7 @@ rules
 
 	program-to-cil: Program(e,Let(a,b,c,d)) -> ProgramCil(<concat> [[Method(a, [], <program-to-cil> d)], <nonEntryPoints-to-cil> e], a)
 	
-	program-to-cil: Application(a,b) -> <debug2;concat> [<debug0;program-to-cil;debug1> a, <program-to-cil> b, [CallVirt()]]
+	program-to-cil: Application(a,b) -> <debug2;concat> [<debug0;program-to-cil;debug1> a, <program-to-cil> b, [CallVirt("placeholder")]]
 	
 	program-to-cil: Identifier(name) -> [NewObj(<concat-strings> [name, "_0"], [])]
 	
@@ -44,8 +44,10 @@ rules
 	
 	curriedFunction-to-cil: (processed, Let(name, [argHead | argTail], retTy, body)) -> <concat> [[FunctionDefinition(
 		<concat-strings> [name, "_", <length;int-to-string> processed],
+		<getCurriedType> (retTy, [argHead | argTail]),
 		<map(generateField)> processed,
-		<generateConstructor> (<concat-strings> [name, "_", <length;int-to-string> processed], processed, "[FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2<int32,int32>"),
+		<generateConstructor> (<concat-strings> [name, "_", <length;int-to-string> processed], processed, <getCurriedType> (retTy, [argHead | argTail])),
+		<getCurriedType> (retTy, argTail),
 		<generateInvokeImplementation> (name, processed, argTail)
 	)],
 	<curriedFunction-to-cil> (<concat> [processed, [argHead]], Let(name, argTail, retTy, body))
@@ -64,6 +66,10 @@ rules
 //	      load all fields 
 //      load param  
 //      call ctor 
+ 
+ 
+ 	getCurriedType: (retTy, []) -> "int32"
+ 	getCurriedType: (retTy, [argTyHd | argTyTl]) -> <concat-strings> ["class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2<int32,", <getCurriedType> (retTy, argTyTl), ">"]
  
 	generateField: x -> Field("int32", <getIdentifierName> x)
 //	generateParam: 

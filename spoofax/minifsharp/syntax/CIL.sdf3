@@ -83,14 +83,14 @@ Function.Method = <
 >
 
 Function.FunctionDefinition = <
-.class nested assembly auto ansi serializable beforefieldinit <Name> extends class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2\<int32,int32\>
+.class nested assembly auto ansi serializable beforefieldinit <Name> extends <Type>
 {
 
   <{Field "\n"}*> 
 
   <Ctor>
 
-  .method public virtual strict instance default int32 Invoke (int32 x)  cil managed 
+  .method public virtual strict instance default <Type> Invoke (int32 x)  cil managed 
   {
     .maxstack 1024
     <{Instruction "\n"}*>
@@ -124,8 +124,8 @@ Instruction.LoadField = <ldfld <Type> Test1/<Name>::<Name>>
 
 Instruction.NewObj = <newobj instance void class Test1/<Name>::'.ctor'( <{Type ","}*> )>
 Instruction.Call = <call <Type> class Test1::<Name>( <{Type ","}*> )>
-Instruction.CallVirt = <callvirt instance !1 class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2\<int32, int32\>::Invoke(!0)>
-Instruction.CallConstructor = <call instance void class <LiberalString>::'.ctor'()>
+Instruction.CallVirt = <callvirt instance !1 <Type>::Invoke(!0)>
+Instruction.CallConstructor = <call instance void <LiberalString>::'.ctor'()>
 Instruction.Ldc = <ldc.i4 <Int>>
 Instruction.Mul = <mul>
 Instruction.Add = <add>
