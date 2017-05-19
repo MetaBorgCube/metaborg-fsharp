@@ -12,6 +12,7 @@ signature
     	List : Type -> Type
     	Tuple : list(Tuple) -> Type
     	Unit : Type
+    	Function : Type * Type -> Type
     
   	name resolution
 
@@ -26,13 +27,6 @@ signature
     well-formedness
 	  	(P* . I*)
 	  
- functions
-  	
-  	simplifyApplicationType : Type -> Type {
-  		([], retTy) -> retTy,
-  		x -> x
-  	}
-    
 rules
 
   	init ^ (s) := new s.
@@ -44,7 +38,7 @@ rules
 		new mainscopeinside,
 		mainscopeinside -P-> mainscope,
   		ProgramExp [[ expBlock ^ (s, mainscope) : ty]],
-  		[[ main ^ (mainscope,  mainscopeinside) : Unit()]],
+  		[[ main ^ (mainscope,  mainscopeinside) : ty2]],
   		true.
 
   	ProgramExp[[ Some(block @ ExprBlock(_, _)) ^ (s, mainscope) : ty ]] :=
@@ -75,23 +69,28 @@ rules
 
 	// Let Rules
 
-  	[[ Let(id, args, retTy, body) ^ (s, s') : (argTys, retTyp) ]] := 
+  	[[ Let(id, args, retId, body) ^ (s, s') : argCurried2 ]] := 
+		GetSpecifiedRetTy [[ retId ^ (s') : retTyp ]],	  // Constraint of the specified type
+		MapCurry [[ args ^ (s_body, retTyp) : argCurried ]],
+//		argCurried == Function(Int(),Int()),
 		Const{id} <- s',
-		Const{id} : (argTys, retTyp),
-		new s_body, 
+		Const{id} : argCurried2,
+		argCurried2 genOf(vars) argCurried,
+		new s_body,  
 		s_body -P-> s,
-		Map1T(CheckParam) [[ args ^ (s_body) : argTys ]], // constraint of the arg types
-		GetSpecifiedRetTy [[ retTy ^ (s) : retTyp ]],	  // Constraint of the specified type
 	    [[ body ^ (s_body) : retTyp]].					  // Constraint of the infered type
-	    
+
+	
+	   
   	[[ LetRec(id, args, retTy, body) ^ (s, s') : (argTys, retTyp) ]] := 
-		Const{id} <- s,
-		Const{id} : (argTys, retTyp),
-		new s_body, 
-		s_body -P-> s,
-		Map1T(CheckParam) [[ args ^ (s_body) : argTys ]], // constraint of the arg types
-		GetSpecifiedRetTy [[ retTy ^ (s) : retTyp ]],	  // Constraint of the specified type
-	    [[ body ^ (s_body) : retTyp]].					  // Constraint of the infered type
+//		Const{id} <- s,
+//		Const{id} : (argTys, retTyp),
+//		new s_body, 
+//		s_body -P-> s,
+//		Map1T(CheckParam) [[ args ^ (s_body) : argTys ]], // constraint of the arg types
+//		GetSpecifiedRetTy [[ retTy ^ (s) : retTyp ]],	  // Constraint of the specified type
+//	    [[ body ^ (s_body) : retTyp]].					  // Constraint of the infered type
+	true.
     
   	[[ LetConst(id, retTy, body) ^ (s, s') : ty ]] := 
 		Const{id} <- s',
@@ -147,15 +146,6 @@ rules
 	[[ TypeTuple(plist) ^ (s) : Tuple(ty) ]] :=
 		Map1T [[ plist ^ (s) : ty]].
     
-  	// Function parameters
-    
-  	CheckParam [[ Identifier(id) ^ (s) : ty ]] := 
-	    Const{id} <- s,
-	    Const{id} : ty.
-  	CheckParam [[ TypedIdentifier(id, typ) ^ (s) : ty ]] := 
-  		[[ typ ^ (s) : ty ]],
-	  	Const{id} <- s,
-	  	Const{id} : ty.
   
   	// Function return types
    
@@ -170,13 +160,19 @@ rules
 	  	Const{id} |-> d,
 	  	d : ty.
   
+  	[[ ArgIdentifier(id) ^ (s) : ty ]] := 
+	    Const{id} <- s,
+	    Const{id} : ty.
+  	[[ TypedArgIdentifier(id, typ) ^ (s) : ty ]] := 
+  		[[ typ ^ (s) : ty ]],
+	  	Const{id} <- s,
+	  	Const{id} : ty.
+  		
   	[[ Const(v) ^ (s) : ty]] :=
     	[[ v ^ (s) : ty]].
   
   	[[ Integer(x) ^ (s) : Int()]].
-   
-  	[[ True() ^ (s) : Bool()]].
-  	[[ False() ^ (s) : Bool()]].
+   	[[ Bool(x) ^ (s) : Bool() ]].
    
 	[[ BinaryOperation(PlusOp(), 	a,b) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
 	[[ BinaryOperation(MinOp() , 	a,b) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
@@ -193,9 +189,16 @@ rules
 
 	// Application type
 
-  	[[ Application(e1, e2) ^ (s) : ty ]] := 
-  		ty is simplifyApplicationType of (otherArgTys, funcRetTy),
-	    [[ e1 ^ (s) : ([argTy | otherArgTys], funcRetTy) ]],
+
+	[[ Application(x@Identifier(_), e2) ^ (s) : funcRetTy ]] := 
+	    [[ x ^ (s) : ty ]],
+	    ty2 instOf ty,
+	    ty2 == Function(argTy, funcRetTy),
+	    [[ e2 ^ (s) : argTy ]].
+  
+
+  	[[ Application(e1, e2) ^ (s) : funcRetTy ]] := 
+	    [[ e1 ^ (s) : Function(argTy, funcRetTy) ]],
 	    [[ e2 ^ (s) : argTy ]].
   
   
@@ -218,3 +221,12 @@ rules
 		Map2UT(X)[[ xs ^ (s1,s2) : ty ]].
 
 	Map2UT(X)[[ [] ^ (s1,s2) : ty ]].
+	
+	MapCurry [[ [x|[]] ^ (s, retTy) : Function(argType, retTy) ]] :=
+		[[ x ^ (s) : argType ]].
+		
+	MapCurry [[ [x|xs] ^ (s, retTy) : Function(argType, ty) ]] :=
+		[[ x ^ (s) : argType ]],
+		MapCurry [[ xs ^ (s, retTy) : ty ]].
+	
+	
