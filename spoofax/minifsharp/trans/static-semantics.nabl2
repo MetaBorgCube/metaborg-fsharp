@@ -13,7 +13,9 @@ signature
     	Tuple : list(Tuple) -> Type
     	Unit : Type
     	Function : Type * Type -> Type
-    
+    	Forall : list(Var) * Term -> Term
+    	TVar : String -> Term
+    	
   	name resolution
 
     labels

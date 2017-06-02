@@ -5,7 +5,7 @@ Int = [0-9]+
 Name = [a-zA-Z] [a-zA-Z0-9]*
 Type = Name
 String = Name
-LiberalString = [a-zA-Z0-9 \[\]\.\<\>\`]
+LiberalString = [a-zA-Z0-9 \[\]\.\<\>\`\!]
 context-free start-symbols
 	Test
 
@@ -71,9 +71,11 @@ context-free syntax
 }
 >
 
+GenericTypeIndicator.GenericTypeIndicator = <\<<{LiberalString ","}+>\>>
+
 
 Function.Method = <
-.method public static specialname default int32 get_<Name> ( <{Type ","}*> )  cil managed 
+.method public static specialname default <LiberalString> get_<Name> <GenericTypeIndicator?> ( <{LiberalString ","}*> )  cil managed 
 {
 	.custom instance void class [mscorlib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::'.ctor'() =  (01 00 00 00 )
 	.maxstack 1024
@@ -83,7 +85,7 @@ Function.Method = <
 >
 
 Function.FunctionDefinition = <
-.class nested assembly auto ansi serializable beforefieldinit <Name> extends <Type>
+.class nested assembly auto ansi serializable beforefieldinit <Name> <GenericTypeIndicator?> extends <Type>
 {
 
   <{Field "\n"}*> 
