@@ -58,6 +58,12 @@ rules
 	desugar: RulesEscaped(a, b)			-> <concat> [[a], b]
 	desugar: RuleFirst(a, b)			-> Rule(a, b)
 	
+	// Let Expressions
+	
+	desugar: LetExp(a @ LetConst(_, _, _))	-> a
+	desugar: LetExp(a @ LetRec(_, _, _, _))	-> a
+	desugar: LetExp(a @ Let(_, _, _, _))	-> a
+	
 	// Tuple
 	
 	desugar: OuterPatternTuple(RawPatternTuple(a,b)) 		-> PatternTuple(<concat> [[a], b])

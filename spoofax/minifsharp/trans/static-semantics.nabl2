@@ -15,7 +15,7 @@ signature
     	Function : Type * Type -> Type
     	Forall : list(Var) * Term -> Term
     	TVar : String -> Term
-    	
+    	//Origin : String
   	name resolution
 
     labels
@@ -37,54 +37,54 @@ rules
 
   	[[ Program(expBlock, main) ^ (s) ]] :=
 		new mainscope,
-		new mainscopeinside,
-		mainscopeinside -P-> mainscope,
   		ProgramExp [[ expBlock ^ (s, mainscope) : ty]],
-  		[[ main ^ (mainscope,  mainscopeinside) : ty2]],
+  		[[ main ^ (mainscope) : ty2]],
   		true.
 
   	ProgramExp[[ Some(block @ ExprBlock(_, _)) ^ (s, mainscope) : ty ]] :=
-  		ProgramExp[[ block ^ (s, mainscope) : ty]].
+  		OuterExprBlock[[ block ^ (s, mainscope) : ty]].
   	
   	ProgramExp[[ None() ^ (s, mainscope) : ty ]] :=
     	mainscope -P-> s,
     	true.
 	
-  	ProgramExp[[ ExprBlock(LetExp(x), next) ^ (s, mainscope) : ty ]] := 
-  		new s',
-  		s' -P-> s,
-		[[ x ^ (s, s') : ty1]],
-		ProgramExp[[ next ^ (s', mainscope) : ty2 ]].
-	
-  	ProgramExp[[ ExprBlock(exp, next) ^ (s, mainscope) : ty ]] := 
-		[[ exp ^ (s) : ty1 ]],
-		ProgramExp[[ next ^ (s, mainscope) : ty2 ]].
-	
 	// Expression Block Rules
 	
-  	[[ ExprBlock(exp, None()) ^ (s) : ty]] := 
+  	OuterExprBlock[[ ExprBlock(exp, None()) ^ (s, mainscope) : ty]] := 
+		[[ exp ^ (s) : ty ]],
+		mainscope -P-> s.
+	
+  	OuterExprBlock[[ ExprBlock(exp, Some(next)) ^ (s, mainscope) : ty]] := 
+		[[ exp ^ (s) : ty1 ]],
+		new s',
+		s' -P-> s,
+		OuterExprBlock[[ next ^ (s', mainscope) : ty ]].
+	
+  	InnerExprBlock[[ ExprBlock(exp, None()) ^ (s) : ty]] := 
 		[[ exp ^ (s) : ty ]].
 	
-  	[[ ExprBlock(exp, Some(next)) ^ (s) : ty]] := 
+  	InnerExprBlock[[ ExprBlock(exp, Some(next)) ^ (s) : ty]] := 
 		[[ exp ^ (s) : ty1 ]],
-		[[ next ^ (s) : ty ]].
+		new s',
+		s' -P-> s,
+		InnerExprBlock[[ next ^ (s') : ty ]].
 
 	// Let Rules
 
-  	[[ Let(id, args, retId, body) ^ (s, s') : argCurried2 ]] := 
-		GetSpecifiedRetTy [[ retId ^ (s') : retTyp ]],	  // Constraint of the specified type
+  	[[ Let(id, args, retId, body) ^ (s) : argCurried2 ]] := 
+		GetSpecifiedRetTy [[ retId ^ (s) : retTyp ]],	  // Constraint of the specified type
 		MapCurry [[ args ^ (s_body, retTyp) : argCurried ]],
-//		argCurried == Function(Int(),Int()),
-		Const{id} <- s',
+		Const{id} <- s,
 		Const{id} : argCurried2,
+		//Const{id}.origin := "let-binding",
 		argCurried2 genOf(vars) argCurried,
 		new s_body,  
 		s_body -P-> s,
-	    [[ body ^ (s_body) : retTyp]].					  // Constraint of the infered type
+	    InnerExprBlock[[ body ^ (s_body) : retTyp]].					  // Constraint of the infered type
 
 	
 	   
-  	[[ LetRec(id, args, retTy, body) ^ (s, s') : (argTys, retTyp) ]] := 
+  	[[ LetRec(id, args, retTy, body) ^ (s) : (argTys, retTyp) ]] := 
 //		Const{id} <- s,
 //		Const{id} : (argTys, retTyp),
 //		new s_body, 
@@ -94,13 +94,13 @@ rules
 //	    [[ body ^ (s_body) : retTyp]].					  // Constraint of the infered type
 	true.
     
-  	[[ LetConst(id, retTy, body) ^ (s, s') : ty ]] := 
-		Const{id} <- s',
+  	[[ LetConst(id, retTy, body) ^ (s) : ty ]] := 
+		Const{id} <- s,
 		Const{id} : ty,
 		new s_body, 
 		s_body -P-> s,
 		GetSpecifiedRetTy [[ retTy ^ (s) : ty ]],	  // Constraint of the specified type
-	    [[ body ^ (s_body) : ty]].					  // Constraint of the infered type
+	    InnerExprBlock[[ body ^ (s_body) : ty]].					  // Constraint of the infered type
     
     // Match Rules
     
@@ -165,10 +165,13 @@ rules
   	[[ ArgIdentifier(id) ^ (s) : ty ]] := 
 	    Const{id} <- s,
 	    Const{id} : ty.
+	    //Const{id}.origin := "param".
+	    
   	[[ TypedArgIdentifier(id, typ) ^ (s) : ty ]] := 
   		[[ typ ^ (s) : ty ]],
 	  	Const{id} <- s,
 	  	Const{id} : ty.
+	  	//Const{id}.origin := "param".
   		
   	[[ Const(v) ^ (s) : ty]] :=
     	[[ v ^ (s) : ty]].

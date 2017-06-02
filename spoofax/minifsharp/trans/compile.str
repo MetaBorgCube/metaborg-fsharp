@@ -50,10 +50,15 @@ rules
 	genericVarListToOption: x -> Some(GenericTypeIndicator(x))
 	getOptionalGenericVars: x -> <getGenericVarList; genericVarListToOption> x
 	
-	program-to-cil: Identifier(name) -> [NewObj(<concat-strings> [name, "_0"], [])]
+	program-to-cil: v@Identifier(name) -> result with 
+//	  a         := <nabl2-get-ast-analysis;debugx> v;
+//	  ref-occ   := <nabl2-mk-occurrence(|"Const");debugy> name;
+//	  dec-occ   := <nabl2-get-resolved-name(|a); Fst; debugz> ref-occ;
+//	origin := <nabl2-get-property(|a, "origin"); debug0> dec-occ;
+	result := [NewObj(<concat-strings> [name, "_0"], [])]
 	
 	program-to-cil: ExprBlock(exp, None()) -> <program-to-cil> exp
-	program-to-cil: ExprBlock(exp, Some(next)) -> <program-to-cil> next // only last expression actually does something.. i think
+	program-to-cil: ExprBlock(exp, Some(next)) -> <concat> [<program-to-cil> exp, <program-to-cil> next]
 	
 	program-to-cil: Const(Integer(x)) -> [Ldc(x)]
 	program-to-cil: BinaryOperation(op, a, b) -> <concat> [<program-to-cil> a, <program-to-cil> b, <binop-to-cil> op]
@@ -65,9 +70,8 @@ rules
 		genericTypes := <debug(|"baz: ");getOptionalGenericVars;debug(|"baq: ")> tmp;
 		method 		 := Method(returnType, name, genericTypes, argTypes, <program-to-cil> body);
 		curriedFunc  := <debug4;curriedFunction-to-cil;debug5> (tmp, tmp, name, [], args);
+		freeVars 	 := <debug(|"###1 ");getFreeVars; debug(|"###2 ")> ([], a);
 		result 	 	 := <concat> [[method], curriedFunc]
-
-	program-to-cil: LetExp(a@Let(_,_,_,_)) -> <debuga;program-to-cil;debugb> a
 
 	strip-forall: Forall(x,y) -> y
 	strip-forall: x -> x
@@ -89,7 +93,7 @@ rules
 		result 		 := <concat> [[function], nextFunction] 
 		
 		
-		
+	
 		
 	// no more args to process; this is the final call; don't return a new function, but return the function result.
 	generateInvokeImplementation: (funTy, className, processed, []) -> <concat> [
@@ -150,4 +154,24 @@ rules
 	listifyExprBlock: ExprBlock(exp, Some(next)) -> <concat> [[exp], <listifyExprBlock> next]
 	listifyExprBlock: ExprBlock(exp, None()) -> [exp]
 	
+	getFreeVars: (scope, None()) -> [] 
+	getFreeVars: (scope, Some(x)) -> <getFreeVars> (scope, x)
+	getFreeVars: (scope, ExprBlock(exp, tail)) -> <concat> [<getFreeVars> (scope, exp), <getFreeVars> (<concat> [scope, args], tail)] with 
+		args := <getExprBlockArgs> (scope, exp)
+	getFreeVars: (scope, BinaryOperation(op, a, b)) -> <concat> [<getFreeVars> (scope, a), <getFreeVars> (scope, b)]
+	getFreeVars: (scope, Const(_)) -> []
+	getFreeVars: (scope, Identifier(x)) -> <debug(|"b1: ");getFreeVar;debug(|"werkt niet: ")> (scope, x)
+	getFreeVars: (scope, Application(a,b)) -> <concat> [<getFreeVars> (scope, a), <getFreeVars> (scope, b)]
+	getFreeVars: (scope, Let(name,args,retTy,body)) -> <getFreeVars> (newscope, body) with
+		argscope := <debug(|"deze functie: ");map(getIdentifierName);debug(|"werkt wel: ")> args;
+		newscope := <debug(|"blabla: ");concat;debug(|"nieuw scopie: ")> [argscope, scope]
 	
+	getExprBlockArgs: (scope, Let(name, _, _, _)) -> [name]
+	getExprBlockArgs: (scope, LetRec(name, _, _, _)) -> [name]
+	getExprBlockArgs: (scope, LetConst(name, _, _)) -> [name]
+	getExprBlockArgs: (scope, _) -> []
+	
+	getFreeVar: (vars, var) -> res
+		with if <strip-annos;elem> (var, vars) then res := [] else res := [var] end
+
+		
