@@ -1,7 +1,7 @@
 module MatchTest
 language minifsharp
 
-start symbol Expression
+start symbol OuterExp
 
 fixture [[
 	[[...]]
