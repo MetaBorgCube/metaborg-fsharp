@@ -21,6 +21,8 @@ lexical syntax
 	Identifier.Int    			= "int"   {reject}
 	Identifier.Bool   			= "bool"  {reject}
 	Identifier.List   			= "list"  {reject}
+	Identifier.If   			= "if"    {reject}
+	Identifier.Else   			= "else"  {reject}
 
 	TypeConstIdentifier.Let    	= "let"   {reject}
 	TypeConstIdentifier.Rec    	= "rec"   {reject}
@@ -33,6 +35,8 @@ lexical syntax
 	TypeConstIdentifier.Int    	= "int"   {reject}
 	TypeConstIdentifier.Bool   	= "bool"  {reject}
 	TypeConstIdentifier.List   	= "list"  {reject}
+	TypeConstIdentifier.If   	= "if"    {reject}
+	TypeConstIdentifier.Else   	= "else"  {reject}
 
 lexical restrictions
 
@@ -72,6 +76,7 @@ context-free syntax
 	Expression.TypeDefinition	= <type <Identifier> = <TypeDefinition>>							{layout(and(and(	gt(col(first(2)),col(first(1))),
 																	 													gt(col(first(3)),col(first(1))))),
 																	 													gt(col(first(4)),col(first(1))))}
+	
 	Expression.Const			= <<Const>>
 	Expression.Identifier		= <<Identifier>>
 	Expression.Application		= <<Expression> <Expression>> 										{layout(			gt(col(first(2)),col(first(1))))}	// second Expression must be on a righter column than first Expression
@@ -129,9 +134,9 @@ context-free syntax
 																	 													ge(col(first(4)),col(first(1))))}
 
 	// Types
-	// TODO: TypeDefinition.TypeEscaped	= <<Type> | <{Type "|"}+>>
-	// TODO: TypeDefinition.Type			= <| <Type> | <{Type "|"}+>>
-
+	
+	TypeDefinition.TypeEscaped	= <<TypedID> | <{TypedID "|"}+>>
+	TypeDefinition.Type			= <| <TypedID> | <{TypedID "|"}+>>
 	TypeDefinition.SingleType	= <<OuterType>>
 
 	OuterType                   = Type
@@ -142,16 +147,19 @@ context-free syntax
 	Type.IntegerType			= <int>
 	Type.BooleanType			= <bool>
 	Type.Identifier				= <<Identifier>>
-	Type.TypeIdentifier			= <<TypeConstIdentifier>>
 	Type.ListType				= <<Type> list>														{layout(			gt(col(first(2)),col(first(1))))}
-	Type.TypedIdentifier		= <<TypeConstIdentifier> of <Type>>									{layout(and(		gt(col(first(2)),col(first(1))),
+	Type.TypedID				= <<TypedID>>
+	Type.TypeConstIdentifier	= <<TypeConstIdentifier>>
+	TypedID.TypedID				= <<TypeConstIdentifier> of <Type>>									{layout(and(		gt(col(first(2)),col(first(1))),
 																	 													gt(col(first(3)),col(first(1)))))}
+	TypedID.TypeConstIdentifier	= <<TypeConstIdentifier>>
 	Type						= <(<Type>)>														{bracket}
 	Type.NestedTypeTuple		= <(<RawTypeTuple>)>
 
 	// Patterns
-	// TODO: Pattern.TypeConst			= <<TypeConstIdentifier> <Const?>>
-	// TODO: Pattern.TypeConstIdentifier	= <<TypeConstIdentifier> <Identifier?>>
+	
+	Pattern.TypeConst				= <<TypeConstIdentifier> <Const?>>
+	Pattern.TypeConstIdentifier		= <<TypeConstIdentifier> <Identifier?>>
 
 	OuterPattern                    = Pattern
 	OuterPattern.OuterPatternTuple  = RawPatternTuple
