@@ -1,13 +1,13 @@
 module minifsharp
 
 imports
-  
+
 	Common
 
 lexical syntax
 
-	Identifier					= [a-zA-Z] [a-zA-Z0-9]* 
-	TypeConstIdentifier			= [A-Z] [a-zA-Z0-9]* 
+	Identifier					= [a-zA-Z] [a-zA-Z0-9]*
+	TypeConstIdentifier			= [A-Z] [a-zA-Z0-9]*
 	Integer						= [0-9]+
 
 	Identifier.Let    			= "let"   {reject}
@@ -33,7 +33,7 @@ lexical syntax
 	TypeConstIdentifier.Int    	= "int"   {reject}
 	TypeConstIdentifier.Bool   	= "bool"  {reject}
 	TypeConstIdentifier.List   	= "list"  {reject}
-	
+
 lexical restrictions
 
 	Identifier          		-/- [a-zA-Z0-9]
@@ -49,26 +49,32 @@ lexical syntax start-symbols
 context-free start-symbols
 
 	Program
-	Expression
+	OuterExp
 
 context-free syntax
-  
+
 	// Program
-  
+
 	Program.Program				= <<ExprBlock?> [\<EntryPoint\>] <Let>>
-	
+
 	// Expressions
-	
+
+
+	OuterExp                   	= Expression
+	OuterExp.OuterExpTuple  	= RawExpTuple
+
+	RawExpTuple.RawExpTuple 	= <<Expression> , <{Expression ","}+>>
+	Expression.NestedExpTuple	= <(<RawExpTuple>)>			
+
 	Expression.LetExp			= <<Let>>
 	Expression.Match			= <match <Expression> with <Rules>>
 	Expression.Print			= <printf <Expression>>
-	Expression.TypeDefinition	= <type <Identifier> = <TypeDefinition>>							{layout(and(and(	gt(col(first(2)),col(first(1))), 
+	Expression.TypeDefinition	= <type <Identifier> = <TypeDefinition>>							{layout(and(and(	gt(col(first(2)),col(first(1))),
 																	 													gt(col(first(3)),col(first(1))))),
 																	 													gt(col(first(4)),col(first(1))))}
 	Expression.Const			= <<Const>>
 	Expression.Identifier		= <<Identifier>>
 	Expression.Application		= <<Expression> <Expression>> 										{layout(			gt(col(first(2)),col(first(1))))}	// second Expression must be on a righter column than first Expression
-	Expression.TupleExp			= <<Expression> , <Expression>>
 	Expression.List				= <[<{Expression ";"}*>]>
 	Expression.Plus				= <<Expression> + <Expression>>										{left,layout(and(		ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
 																														ge(col(first(2)),sub(col(first(1)), num("2")))))} // + is allowed to be two columns to the left
@@ -85,89 +91,89 @@ context-free syntax
 	Expression.Negative			= <-<Expression>>
 	Expression.Not				= <! <Expression>>
 	Expression					= <(<Expression>)>													{bracket}
-	
+
 	Let.Let						= <let <Identifier> <Argument+> <ReturnType?> = <ExprBlock>> 		{layout(and(		gt(col(first(5)),col(first(1))), 	// "=" must be on a a righter column than let
 																														gt(col(first(6)),col(first(1)))))}	// ExprBlock must be on a a righter column than let
 	Let.LetRec					= <let rec <Identifier> <Argument*> <ReturnType?> = <ExprBlock>> 	{layout(and(		gt(col(first(6)),col(first(1))), 	// "=" must be on a righter column than let
 																														gt(col(first(7)),col(first(1)))))}	// ExprBlock must be on a righter column than let
 	Let.LetConst				= <let <Identifier> <ReturnType?> = <ExprBlock>> 		            {layout(and(		gt(col(first(4)),col(first(1))), 	// "=" must be on a a righter column than let
 																														gt(col(first(5)),col(first(1)))))}	// ExprBlock must be on a a righter column than let
-	
-	
+
+
 	ExprBlock.ExprBlock   		= <<ExprNewline> <ExprBlock?>> 										{layout(eq(			col(first(1)),col(first(2))))}		// all Expressions must be on the same column
-	
+
 	// Integers and Booleans
-	
+
 	Const.Integer				= <<Integer>>
 	Const.Bool					= <<Boolean>>
-	
+
 	Boolean.True				= <true>
 	Boolean.False				= <false>
-	
+
 	// Return types and Arguments
-	
+
 	ReturnType.ReturnType		= <: <OuterType>>
-	
+
 	Argument.ArgIdentifier		= <<Identifier>>
 	Argument.TypedArgIdentifier	= <( <Identifier> : <OuterType> )>
-	
+
 	// Rules
-	
+
 	Rules.RulesEscaped			= <<RuleFirst> <Rule*>>												{layout(			ge(col(first(2)),col(first(1))))}
 	Rules.Rules					= <<Rule> <Rule*>>													{layout(			ge(col(first(2)),col(first(1))))}
-	
-	RuleFirst.RuleFirst			= <<OuterPattern> -\> <Expression>> 								{layout(and(		ge(col(first(2)),col(first(1))), 
+
+	RuleFirst.RuleFirst			= <<OuterPattern> -\> <Expression>> 								{layout(and(		ge(col(first(2)),col(first(1))),
 																	 													ge(col(first(3)),col(first(1)))))}
-	Rule.Rule					= <| <OuterPattern> -\> <Expression>> 								{layout(and(and(	ge(col(first(2)),col(first(1))), 
+	Rule.Rule					= <| <OuterPattern> -\> <Expression>> 								{layout(and(and(	ge(col(first(2)),col(first(1))),
 																	 													ge(col(first(3)),col(first(1))))),
 																	 													ge(col(first(4)),col(first(1))))}
-	
+
 	// Types
 	// TODO: TypeDefinition.TypeEscaped	= <<Type> | <{Type "|"}+>>
 	// TODO: TypeDefinition.Type			= <| <Type> | <{Type "|"}+>>
-	
+
 	TypeDefinition.SingleType	= <<OuterType>>
-	
+
 	OuterType                   = Type
 	OuterType.OuterTypeTuple  	= RawTypeTuple
-	
-	RawTypeTuple.RawTypeTuple 	= <<Type> * <{Type "*"}+>> 		
-	
+
+	RawTypeTuple.RawTypeTuple 	= <<Type> * <{Type "*"}+>>
+
 	Type.IntegerType			= <int>
 	Type.BooleanType			= <bool>
 	Type.Identifier				= <<Identifier>>
 	Type.TypeIdentifier			= <<TypeConstIdentifier>>
 	Type.ListType				= <<Type> list>														{layout(			gt(col(first(2)),col(first(1))))}
-	Type.TypedIdentifier		= <<TypeConstIdentifier> of <Type>>									{layout(and(		gt(col(first(2)),col(first(1))), 
+	Type.TypedIdentifier		= <<TypeConstIdentifier> of <Type>>									{layout(and(		gt(col(first(2)),col(first(1))),
 																	 													gt(col(first(3)),col(first(1)))))}
 	Type						= <(<Type>)>														{bracket}
-	Type.NestedTypeTuple		= <(<RawTypeTuple>)>		
-	
+	Type.NestedTypeTuple		= <(<RawTypeTuple>)>
+
 	// Patterns
 	// TODO: Pattern.TypeConst			= <<TypeConstIdentifier> <Const?>>
 	// TODO: Pattern.TypeConstIdentifier	= <<TypeConstIdentifier> <Identifier?>>
-	
+
 	OuterPattern                    = Pattern
 	OuterPattern.OuterPatternTuple  = RawPatternTuple
-	
-	RawPatternTuple.RawPatternTuple = <<Pattern> , <{Pattern ","}+>> 								{layout(and(		ge(col(first(2)),col(first(1))), 
+
+	RawPatternTuple.RawPatternTuple = <<Pattern> , <{Pattern ","}+>> 								{layout(and(		ge(col(first(2)),col(first(1))),
 																														ge(col(first(3)),col(first(1)))))}
-	
+
 	Pattern.Wildcard			    = <_>
-	Pattern.PatternConcat			= <<Pattern> :: <Pattern>>										{layout(and(		ge(col(first(2)),col(first(1))), 
+	Pattern.PatternConcat			= <<Pattern> :: <Pattern>>										{layout(and(		ge(col(first(2)),col(first(1))),
 																	 													ge(col(first(3)),col(first(1)))))}
 	Pattern.PatternList				=  <[<{Pattern ";"}*>]>
-	Pattern.PatternOr				= <<Pattern> | <Pattern>>										{layout(and(		ge(col(first(2)),col(first(1))), 
+	Pattern.PatternOr				= <<Pattern> | <Pattern>>										{layout(and(		ge(col(first(2)),col(first(1))),
 																	 													ge(col(first(3)),col(first(1)))))}
-									
+
 	Pattern.Const					= <<Const>>
 	Pattern.Identifier				= <<Identifier>>
-	Pattern.NestedPatternTuple		= <(<RawPatternTuple>)>		
-	
+	Pattern.NestedPatternTuple		= <(<RawPatternTuple>)>
+
 syntax
-		
-	ExprNewline-CF = Expression-CF LAYOUT?-CF {enforce-newline}
-	
+
+	ExprNewline-CF = OuterExp-CF LAYOUT?-CF {enforce-newline}
+
 context-free priorities
 
   	{ left:
@@ -183,11 +189,7 @@ context-free priorities
 		Expression.Negative
 		Expression.Not
 	} > { left:
-		Expression.TupleExp
-	} > { left: 
 	    Expression.LetExp
 	} > { left:
 		Expression.Match
 	}
-	
-	

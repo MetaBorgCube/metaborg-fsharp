@@ -4,18 +4,18 @@ imports
 	src-gen/signatures/minifsharp-sig
 
 signature
-sorts 
+sorts
 
 	BinaryOperation	BinaryOperand
 	UnaryOperation	UnaryOperand
-	PatternTuple	TypeTuple
-	
+	PatternTuple	TypeTuple 		ExpTuple
+
 constructors
-	
+
 	// Binary Operations
-	
+
 	BinaryOperation				: BinaryOperand * Expression * Expression -> Expression
-	
+
 
 	PlusOp						: BinaryOperand
 	MinOp						: BinaryOperand
@@ -23,21 +23,22 @@ constructors
 	ConcatOp					: BinaryOperand
 	AndOp						: BinaryOperand
 	OrOp						: BinaryOperand
-	
+
 	// Unary Operations
-	
+
 	UnaryOperation				: UnaryOperand * Expression -> Expression
-	
+
 	NegativeOp					: BinaryOperand
 	NotOp						: BinaryOperand
-	
+
 	// Tuple
-	
+
 	PatternTuple				: PatternTuple -> Pattern
 	TypeTuple					: TypeTuple -> Type
-	
+	ExpTuple					: ExpTuple -> Expression
+
 rules
-	
+
 	// Binary Operations
 
 	desugar: Plus(a, b)					-> BinaryOperation(PlusOp(), a, b)
@@ -46,21 +47,23 @@ rules
 	desugar: Concat(a, b)				-> BinaryOperation(ConcatOp(), a, b)
 	desugar: And(a, b)					-> BinaryOperation(AndOp(), a, b)
 	desugar: Or(a, b)					-> BinaryOperation(OrOp(), a, b)
-	
+
 	// Unary Operations
-	
+
 	desugar: Negative(a)				-> UnaryOperation(NegativeOp(), a)
 	desugar: Not(a)						-> UnaryOperation(NotOp(), a)
-	
+
 	// Match Rules
-	
+
 	desugar: Rules(a, b)				-> <concat> [[a], b]
 	desugar: RulesEscaped(a, b)			-> <concat> [[a], b]
 	desugar: RuleFirst(a, b)			-> Rule(a, b)
-	
+
 	// Tuple
-	
+
 	desugar: OuterPatternTuple(RawPatternTuple(a,b)) 		-> PatternTuple(<concat> [[a], b])
 	desugar: NestedPatternTuple(RawPatternTuple(a,b)) 		-> PatternTuple(<concat> [[a], b])
 	desugar: OuterTypeTuple(RawTypeTuple(a,b)) 				-> TypeTuple(<concat> [[a], b])
 	desugar: NestedTypeTuple(RawTypeTuple(a,b)) 			-> TypeTuple(<concat> [[a], b])
+	desugar: OuterExpTuple(RawExpTuple(a,b)) 				-> ExpTuple(<concat> [[a], b])
+	desugar: NestedExpTuple(RawExpTuple(a,b)) 				-> ExpTuple(<concat> [[a], b])
