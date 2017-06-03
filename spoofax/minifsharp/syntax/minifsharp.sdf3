@@ -81,18 +81,30 @@ context-free syntax
 	Expression.Identifier		= <<Identifier>>
 	Expression.Application		= <<Expression> <Expression>> 										{layout(			gt(col(first(2)),col(first(1))))}	// second Expression must be on a righter column than first Expression
 	Expression.List				= <[<{Expression ";"}*>]>
-	Expression.Plus				= <<Expression> + <Expression>>										{left,layout(and(		ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
-																														ge(col(first(2)),sub(col(first(1)), num("2")))))} // + is allowed to be two columns to the left
-	Expression.Min				= <<Expression> - <Expression>> 									{left,layout(and(		ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
-																														ge(col(first(2)),sub(col(first(1)), num("2")))))} // - is allowed to be two columns to the left
-	Expression.Mult				= <<Expression> * <Expression>>										{left,layout(and(		ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
-																														ge(col(first(2)),sub(col(first(1)), num("2")))))} // * is allowed to be two columns to the left
-	Expression.Concat			= <<Expression> :: <Expression>>									{left,layout(and(		ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
-																														ge(col(first(2)),sub(col(first(1)), num("3")))))} // :: is allowed to be two columns to the left
-	Expression.And				= <<Expression> && <Expression>>									{left,layout(and(		ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
-																														ge(col(first(2)),sub(col(first(1)), num("3")))))} // && is allowed to be two columns to the left
-	Expression.Or				= <<Expression> || <Expression>>									{left,layout(and(		ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
-																														ge(col(first(2)),sub(col(first(1)), num("3")))))} // || is allowed to be two columns to the left
+	Expression.Plus				= <<Expression> + <Expression>>										{left,layout(and(	ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
+																														ge(col(first(2)),sub(col(first(1)), num("2")))))} // op is allowed to be two columns to the left
+	Expression.Min				= <<Expression> - <Expression>> 									{left,layout(and(	ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
+																														ge(col(first(2)),sub(col(first(1)), num("2")))))} // op is allowed to be two columns to the left
+	Expression.Mult				= <<Expression> * <Expression>>										{left,layout(and(	ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
+																														ge(col(first(2)),sub(col(first(1)), num("2")))))} // op is allowed to be two columns to the left
+	Expression.Concat			= <<Expression> :: <Expression>>									{left,layout(and(	ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
+																														ge(col(first(2)),sub(col(first(1)), num("3")))))} // op is allowed to be two columns to the left
+	Expression.And				= <<Expression> && <Expression>>									{left,layout(and(	ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
+																														ge(col(first(2)),sub(col(first(1)), num("3")))))} // op is allowed to be two columns to the left
+	Expression.Or				= <<Expression> || <Expression>>									{left,layout(and(	ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
+																														ge(col(first(2)),sub(col(first(1)), num("3")))))} // op is allowed to be two columns to the left
+	Expression.Equal			= <<Expression> == <Expression>>									{left,layout(and(	ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
+																														ge(col(first(2)),sub(col(first(1)), num("3")))))} // op is allowed to be two columns to the left
+	Expression.NotEqual			= <<Expression> != <Expression>>									{left,layout(and(	ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
+																														ge(col(first(2)),sub(col(first(1)), num("3")))))} // op is allowed to be two columns to the left
+	Expression.Smaller			= <<Expression> \< <Expression>>									{left,layout(and(	ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
+																														ge(col(first(2)),sub(col(first(1)), num("3")))))} // op is allowed to be two columns to the left
+	Expression.Greater			= <<Expression> \> <Expression>>									{left,layout(and(	ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
+																														ge(col(first(2)),sub(col(first(1)), num("3")))))} // op is allowed to be two columns to the left
+	Expression.SmallerEqual		= <<Expression> \<= <Expression>>									{left,layout(and(	ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
+																														ge(col(first(2)),sub(col(first(1)), num("3")))))} // op is allowed to be two columns to the left
+	Expression.GreaterEqual		= <<Expression> \>= <Expression>>									{left,layout(and(	ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
+																														ge(col(first(2)),sub(col(first(1)), num("3")))))} // op is allowed to be two columns to the left
 	Expression.Negative			= <-<Expression>>
 	Expression.Not				= <! <Expression>>
 	Expression.If				= <<If>>
