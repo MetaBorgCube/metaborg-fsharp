@@ -95,7 +95,12 @@ context-free syntax
 																														ge(col(first(2)),sub(col(first(1)), num("3")))))} // || is allowed to be two columns to the left
 	Expression.Negative			= <-<Expression>>
 	Expression.Not				= <! <Expression>>
+	Expression.If				= <<If>>
 	Expression					= <(<Expression>)>													{bracket}
+	
+	If.If						= <if <Expression> then <OuterExp> <IfElse>>
+	IfElse.IfElse				= <else if <Expression> then <OuterExp> <IfElse?>>
+	IfElse.Else					= <else <OuterExp> <IfElse?>>
 
 	Let.Let						= <let <Identifier> <Argument+> <ReturnType?> = <ExprBlock>> 		{layout(and(		gt(col(first(5)),col(first(1))), 	// "=" must be on a a righter column than let
 																														gt(col(first(6)),col(first(1)))))}	// ExprBlock must be on a a righter column than let
