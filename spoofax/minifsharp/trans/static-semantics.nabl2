@@ -179,12 +179,15 @@ rules
   	[[ Integer(x) ^ (s) : Int()]].
    	[[ Bool(x) ^ (s) : Bool() ]].
    
-	[[ BinaryOperation(PlusOp(), 	a,b) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
-	[[ BinaryOperation(MinOp() , 	a,b) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
-	[[ BinaryOperation(MultOp(), 	a,b) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
-	[[ BinaryOperation(AndOp(),  	a,b) ^ (s) : Bool() ]] 		:= [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
-	[[ BinaryOperation(OrOp(),   	a,b) ^ (s) : Bool() ]] 		:= [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
-	[[ BinaryOperation(ConcatOp(), 	a,b) ^ (s) : List(ty) ]] 	:= [[ a ^ (s) : ty ]], 	   [[ b ^ (s) : List(ty) ]].
+	[[ BinaryOperation(PlusOp(), 		a,b) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
+	[[ BinaryOperation(MinOp() , 		a,b) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
+	[[ BinaryOperation(MultOp(), 		a,b) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
+	[[ BinaryOperation(EqualOp(), 		a,b) ^ (s) : ty  ]] 		:= [[ a ^ (s) : ty  ]],    [[ b ^ (s) : ty  ]].
+	[[ BinaryOperation(SmallerOp(), 	a,b) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
+	[[ BinaryOperation(SmallerEqualOp(),a,b) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
+	[[ BinaryOperation(AndOp(),  		a,b) ^ (s) : Bool() ]] 		:= [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
+	[[ BinaryOperation(OrOp(),   		a,b) ^ (s) : Bool() ]] 		:= [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
+	[[ BinaryOperation(ConcatOp(), 		a,b) ^ (s) : List(ty) ]] 	:= [[ a ^ (s) : ty ]], 	   [[ b ^ (s) : List(ty) ]].
 	
 	[[ Print(x) ^ (s) : Unit() ]] :=
 		[[ x ^ (s) : type ]].
