@@ -44,6 +44,19 @@ test negative			[[- 1]] parse succeeds
 test not				[[! 1]] parse succeeds
 test complex			[[(1+1)*2]] parse succeeds
 
+test equals int			[[1 = 1]] parse succeeds
+test equals bool		[[true = true]] parse succeeds
+test equals tuple		[[(1,1) = (1,1)]] parse succeeds
+test equals list		[[ [] = [] ]] parse succeeds
+test not equals int		[[1 <> 1]] parse succeeds
+test not equals bool	[[true <> true]] parse succeeds
+test not equals tuple	[[(1,1) <> (1,1)]] parse succeeds
+test not equals list	[[ [] <> [] ]] parse succeeds
+test smaller int		[[1 < 1]] parse succeeds
+test smallereq int		[[1 <= 1]] parse succeeds
+test greater int		[[1 > 1]] parse succeeds
+test greatereq int		[[1 >= 1]] parse succeeds
+
 // List | Tuples Expressions 
 
 test tuple basic		[[1 , 1]] parse succeeds
