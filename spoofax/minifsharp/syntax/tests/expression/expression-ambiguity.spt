@@ -1,7 +1,7 @@
 module ExpressionAmbiguityTest
 language minifsharp
 
-start symbol Expression
+start symbol OuterExp
 
 fixture [[
 	([[...]])

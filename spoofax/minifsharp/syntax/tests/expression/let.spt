@@ -1,7 +1,7 @@
 module LetTest
 language minifsharp
 
-start symbol Expression
+start symbol OuterExp
 
 fixture [[
 	[[...]]

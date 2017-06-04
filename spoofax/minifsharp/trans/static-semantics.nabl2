@@ -191,9 +191,11 @@ rules
 		
 	[[ List(x) ^ (s) : List(ty) ]] :=
 		Map1UT [[ x ^ (s) : ty ]].
+        	
+	[[ ExpTuple(plist) ^ (s) : Tuple(ty) ]] :=
+		Map1T [[ plist ^ (s) : ty]].
 
 	// Application type
-
 
 	[[ Application(x@Identifier(_), e2) ^ (s) : funcRetTy ]] := 
 	    [[ x ^ (s) : ty ]],
@@ -201,11 +203,9 @@ rules
 	    ty2 == Function(argTy, funcRetTy),
 	    [[ e2 ^ (s) : argTy ]].
   
-
   	[[ Application(e1, e2) ^ (s) : funcRetTy ]] := 
 	    [[ e1 ^ (s) : Function(argTy, funcRetTy) ]],
 	    [[ e2 ^ (s) : argTy ]].
-  
   
   	// Custom Map rules for unappended types
   	
@@ -233,5 +233,4 @@ rules
 	MapCurry [[ [x|xs] ^ (s, retTy) : Function(argType, ty) ]] :=
 		[[ x ^ (s) : argType ]],
 		MapCurry [[ xs ^ (s, retTy) : ty ]].
-	
 	

@@ -1,7 +1,7 @@
 module ExpressionTest
 language minifsharp
 
-start symbol Expression
+start symbol OuterExp
 
 // Constant Expressions
 
@@ -44,7 +44,7 @@ test negative			[[- 1]] parse succeeds
 test not				[[! 1]] parse succeeds
 test complex			[[(1+1)*2]] parse succeeds
 
-// List | Tuples Expressions
+// List | Tuples Expressions 
 
 test tuple basic		[[1 , 1]] parse succeeds
 test tuple multiple		[[1 , 1 , 1]] parse succeeds
