@@ -59,7 +59,8 @@ rules
 	
 	// If Expressions
 
-//	desugar: If(condition, then, else)	-> BinaryOperation(SmallerEqualOp(), b, a)
+	desugar: If(condition, then, else)	-> Match(condition,	[ Rule(Const(Bool(True())), then)
+							                  				, Rule(Const(Bool(False())), else)])
 	
 	// Unary Operations
 
