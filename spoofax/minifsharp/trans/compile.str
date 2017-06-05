@@ -21,7 +21,7 @@ rules
 	      a         := <nabl2-get-ast-analysis; debug1> ast;
 		result := <debug0; desugar-all; program-to-cil; pp-debug> ast
 
-	program-to-cil: Program(e,Let(a,b,c,d)) -> ProgramCil(<concat> [[Method("int32", a, None(), [], <program-to-cil> d)], <nonEntryPoints-to-cil> e], a)
+	program-to-cil: Program(e,Let(a,b,c,d)) -> ProgramCil(<concat> [[Method("int32", a, None(), [], <let-to-cil> d)], <nonEntryPoints-to-cil> e], a)
 	
 	program-to-cil: z@Application(a,b) -> result with
 	funTy := <nabl2-get-ast-type;strip-forall> a;
@@ -63,33 +63,38 @@ rules
 	program-to-cil: Const(Integer(x)) -> [Ldc(x)]
 	program-to-cil: BinaryOperation(op, a, b) -> <concat> [<program-to-cil> a, <program-to-cil> b, <binop-to-cil> op]
 	
-	program-to-cil: a @ Let(name,args,retTy,body) -> result with 
+	program-to-cil: Let(_,_,_,_) -> [] // required for nested lets; can't have a function definition in a function body
+	
+	let-to-cil: a @ Let(name,args,retTy,body) -> result with 
 		tmp 	   	 := <nabl2-get-ast-type; strip-forall; debugq> a;
 		returnType 	 := <debug(|"retTy inp: ");ret-type-to-cil;debug(|"retTy out: ")> tmp;
 		argTypes 	 := <map(\x -> <debugz;arg-type-to-cil;debugx> (tmp, <getIdentifierName> x, args)\)> args;
 		genericTypes := <debug(|"baz: ");getOptionalGenericVars;debug(|"baq: ")> tmp;
 		method 		 := Method(returnType, name, genericTypes, argTypes, <program-to-cil> body);
-		curriedFunc  := <debug4;curriedFunction-to-cil;debug5> (tmp, tmp, name, [], args);
 		freeVars 	 := <debug(|"###1 ");getFreeVars; debug(|"###2 ")> ([], a);
-		result 	 	 := <concat> [[method], curriedFunc]
+		curriedFunc  := <debug4;curriedFunction-to-cil;debug5> (tmp, tmp, name, [], args, freeVars);
+		result 	 	 := <concat;debug6> [[method], curriedFunc, <listifyExprBlock;mapconcat(let-to-cil)> body]
+	let-to-cil: _ -> []
+
 
 	strip-forall: Forall(x,y) -> y
 	strip-forall: x -> x
  
 	getIdentifierName: ArgIdentifier(x) -> x
 	getIdentifierName: TypedArgIdentifier(x, _) -> x
+	getIdentifierName: Identifier(x) -> x
 	
-	curriedFunction-to-cil: (_, _, _, _, []) -> []
-	curriedFunction-to-cil: (funTy, ty@Function(x,y), name, processedArgs, nextArgs@[argHd | argTl]) -> result with
+	curriedFunction-to-cil: (_, _, _, _, [], freeVars) -> []
+	curriedFunction-to-cil: (funTy, ty@Function(x,y), name, processedArgs, nextArgs@[argHd | argTl], freeVars) -> result with
 		funcName 	 := <debugc;concat-strings> [name, "_", <length;int-to-string>processedArgs];
 		baseClass 	 := <debugd;type-to-cil> ty;
 		fields 		 := <debuge;map(generateField)> processedArgs;
-		ctor 		 := <debugf;generateConstructor> (funcName, processedArgs, baseClass);
+		ctor 		 := <debugf;generateConstructor> (funcName, processedArgs, baseClass, freeVars);
 		retTy 		 := <debugg;type-to-cil> y;
 		instructions := <debugh;generateInvokeImplementation> (funTy, name, processedArgs, argTl);
 		genericVars  := <getOptionalGenericVars> funTy;
 		function     := FunctionDefinition(funcName, genericVars, baseClass, fields, ctor, retTy, instructions);
-		nextFunction := <debugi;curriedFunction-to-cil> (funTy, y, name, <concat> [processedArgs, [argHd]], argTl);
+		nextFunction := <debugi;curriedFunction-to-cil> (funTy, y, name, <concat> [processedArgs, [argHd]], argTl, freeVars);
 		result 		 := <concat> [[function], nextFunction] 
 		
 		
@@ -134,7 +139,7 @@ rules
 
 	generateBaseInit: baseType -> <concat>[[LoadArg("0")], [CallConstructor(baseType)]]
 	generateConstructorParamCopy: x -> []
-	generateConstructor: (className, params, baseType) -> Ctor(
+	generateConstructor: (className, params, baseType, freeVars) -> Ctor(
 								<map(\y -> Param("int32", <getIdentifierName> y) \)> params,
 								<concat> [
 									<generateBaseInit> baseType,
@@ -149,7 +154,7 @@ rules
 	binop-to-cil: MultOp() -> [Mul()]
 	
 	nonEntryPoints-to-cil: None() -> []
-	nonEntryPoints-to-cil: Some(x) -> <listifyExprBlock; map(program-to-cil); concat> x
+	nonEntryPoints-to-cil: Some(x) -> <listifyExprBlock; map(let-to-cil); concat> x
 	
 	listifyExprBlock: ExprBlock(exp, Some(next)) -> <concat> [[exp], <listifyExprBlock> next]
 	listifyExprBlock: ExprBlock(exp, None()) -> [exp]
@@ -160,10 +165,10 @@ rules
 		args := <getExprBlockArgs> (scope, exp)
 	getFreeVars: (scope, BinaryOperation(op, a, b)) -> <concat> [<getFreeVars> (scope, a), <getFreeVars> (scope, b)]
 	getFreeVars: (scope, Const(_)) -> []
-	getFreeVars: (scope, Identifier(x)) -> <debug(|"b1: ");getFreeVar;debug(|"werkt niet: ")> (scope, x)
+	getFreeVars: (scope, x@Identifier(_)) -> <debug(|"b1: ");getFreeVar;debug(|"werkt niet: ")> (scope, x)
 	getFreeVars: (scope, Application(a,b)) -> <concat> [<getFreeVars> (scope, a), <getFreeVars> (scope, b)]
 	getFreeVars: (scope, Let(name,args,retTy,body)) -> <getFreeVars> (newscope, body) with
-		argscope := <debug(|"deze functie: ");map(getIdentifierName);debug(|"werkt wel: ")> args;
+		argscope :=  args;
 		newscope := <debug(|"blabla: ");concat;debug(|"nieuw scopie: ")> [argscope, scope]
 	
 	getExprBlockArgs: (scope, Let(name, _, _, _)) -> [name]
@@ -171,7 +176,9 @@ rules
 	getExprBlockArgs: (scope, LetConst(name, _, _)) -> [name]
 	getExprBlockArgs: (scope, _) -> []
 	
-	getFreeVar: (vars, var) -> res
-		with if <strip-annos;elem> (var, vars) then res := [] else res := [var] end
-
+	getFreeVar: (vars, var) -> res with 
+		var_names := <debug(|"b3: ");map(getIdentifierName);debug(|"b4: ")> vars;
+		var_name := <debug(|"b5: ");getIdentifierName;debug(|"b6: ")> var;
+		if <strip-annos;elem> (var_name, var_names) then res := [] else res := [var] end
+ 
 		
