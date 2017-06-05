@@ -15,7 +15,8 @@ signature
     	Function : Type * Type -> Type
     	Forall : list(Var) * Term -> Term
     	TVar : String -> Term
-    	//Origin : String
+    	Origin : String
+    	
   	name resolution
 
     labels
@@ -72,35 +73,35 @@ rules
 	// Let Rules
 
   	[[ Let(id, args, retId, body) ^ (s) : argCurried2 ]] := 
-		GetSpecifiedRetTy [[ retId ^ (s) : retTyp ]],	  // Constraint of the specified type
+		GetSpecifiedRetTy [[ retId ^ (s) : retTyp ]],
+		new s_body, 
+		s_body -P-> s,
+	    InnerExprBlock[[ body ^ (s_body) : retTyp]],
 		MapCurry [[ args ^ (s_body, retTyp) : argCurried ]],
+		argCurried2 genOf(vars) argCurried,
 		Const{id} <- s,
 		Const{id} : argCurried2,
-		//Const{id}.origin := "let-binding",
-		argCurried2 genOf(vars) argCurried,
-		new s_body,  
-		s_body -P-> s,
-	    InnerExprBlock[[ body ^ (s_body) : retTyp]].					  // Constraint of the infered type
-
-	
+		Const{id}.origin := "let-binding".
 	   
-  	[[ LetRec(id, args, retTy, body) ^ (s) : (argTys, retTyp) ]] := 
-//		Const{id} <- s,
-//		Const{id} : (argTys, retTyp),
-//		new s_body, 
-//		s_body -P-> s,
-//		Map1T(CheckParam) [[ args ^ (s_body) : argTys ]], // constraint of the arg types
-//		GetSpecifiedRetTy [[ retTy ^ (s) : retTyp ]],	  // Constraint of the specified type
-//	    [[ body ^ (s_body) : retTyp]].					  // Constraint of the infered type
-	true.
+  	[[ LetRec(id, args, retTy, body) ^ (s) : argCurried2 ]] := 
+		GetSpecifiedRetTy [[ retId ^ (s) : retTyp ]],
+		MapCurry [[ args ^ (s_body, retTyp) : argCurried ]],
+		argCurried2 genOf(vars) argCurried,
+		new s_body, 
+		s_body -P-> s,
+		Const{id} <- s,
+		Const{id} <- s_body,
+		Const{id} : argCurried2,
+		Const{id}.origin := "let-binding",
+	    InnerExprBlock[[ body ^ (s_body) : retTyp]].
     
   	[[ LetConst(id, retTy, body) ^ (s) : ty ]] := 
+		GetSpecifiedRetTy [[ retTy ^ (s) : ty ]],
 		Const{id} <- s,
 		Const{id} : ty,
 		new s_body, 
 		s_body -P-> s,
-		GetSpecifiedRetTy [[ retTy ^ (s) : ty ]],	  // Constraint of the specified type
-	    InnerExprBlock[[ body ^ (s_body) : ty]].					  // Constraint of the infered type
+	    InnerExprBlock[[ body ^ (s_body) : ty]].
     
     // Match Rules
     
@@ -164,14 +165,14 @@ rules
   
   	[[ ArgIdentifier(id) ^ (s) : ty ]] := 
 	    Const{id} <- s,
-	    Const{id} : ty.
-	    //Const{id}.origin := "param".
+	    Const{id} : ty,
+	    Const{id}.origin := "param".
 	    
   	[[ TypedArgIdentifier(id, typ) ^ (s) : ty ]] := 
   		[[ typ ^ (s) : ty ]],
 	  	Const{id} <- s,
-	  	Const{id} : ty.
-	  	//Const{id}.origin := "param".
+	  	Const{id} : ty,
+	  	Const{id}.origin := "param".
   		
   	[[ Const(v) ^ (s) : ty]] :=
     	[[ v ^ (s) : ty]].
