@@ -88,7 +88,8 @@ rules
 	curriedFunction-to-cil: (funTy, ty@Function(x,y), name, processedArgs, nextArgs@[argHd | argTl], freeVars) -> result with
 		funcName 	 := <debugc;concat-strings> [name, "_", <length;int-to-string>processedArgs];
 		baseClass 	 := <debugd;type-to-cil> ty;
-		fields 		 := <debuge;map(generateField)> processedArgs;
+		all_fields   := <concat> [processedArgs, freeVars];
+		fields 		 := <debuge;map(generateField)> all_fields;
 		ctor 		 := <debugf;generateConstructor> (funcName, processedArgs, baseClass, freeVars);
 		retTy 		 := <debugg;type-to-cil> y;
 		instructions := <debugh;generateInvokeImplementation> (funTy, name, processedArgs, argTl);
@@ -125,28 +126,37 @@ rules
  	getCurriedType: (retTy, []) -> "int32"
  	getCurriedType: (retTy, [argTyHd | argTyTl]) -> <concat-strings> ["class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2<int32,", <getCurriedType> (retTy, argTyTl), ">"]
  
-	generateField: x -> Field("int32", <getIdentifierName> x)
+ 
+ 	// a field is a param, but named differently..
+	generateField: x -> <generateParam; \Param(a,b) -> Field(a,b)\> x
 
 	generateFieldInit: (idx, className, []) -> []
-	generateFieldInit: (idx, className, [hd | tl]) -> <concat>[
+	generateFieldInit: (idx, className, [Param(ty,name) | tl]) -> <concat>[
 		[
 			LoadArg("0"),
 			LoadArg(idx),
-			StoreField("int32", className, <getIdentifierName> hd)
+			StoreField(ty, className, name)
 		],
 		<generateFieldInit> (<addS>(idx, "1"), className, tl)
 		]
 
 	generateBaseInit: baseType -> <concat>[[LoadArg("0")], [CallConstructor(baseType)]]
 	generateConstructorParamCopy: x -> []
-	generateConstructor: (className, params, baseType, freeVars) -> Ctor(
-								<map(\y -> Param("int32", <getIdentifierName> y) \)> params,
-								<concat> [
-									<generateBaseInit> baseType,
-									<generateFieldInit> ("1", className, params),
-									[Ret()]
-								] 
-								)
+	generateParam: x -> result with
+		ty     := <nabl2-get-ast-type;strip-forall;type-to-cil> x;
+		name   := <getIdentifierName> x;
+		result := Param(ty, name)
+	generateConstructor: (className, params, baseType, freeVars) -> result with 
+		curried_params := <map(generateParam)> params;
+		freeVar_params := <debug(|"q1: ");map(generateParam);debug(|"q3: ")> freeVars;
+		all_params     := <concat> [curried_params, freeVar_params];
+		body 		   := <concat> 
+		[
+			<generateBaseInit> baseType,
+			<generateFieldInit> ("1", className, all_params),
+			[Ret()]
+	    ];
+		result := Ctor(all_params, body)
 
 	
 	binop-to-cil: PlusOp() -> [Add()]
