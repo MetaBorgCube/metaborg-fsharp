@@ -16,7 +16,7 @@ signature
     	Forall : list(Var) * Term -> Term
     	TVar : String -> Term
     	Origin : String
-    	Constructor : Type * Type -> Type
+    	UnionType : String -> Type
     	
   	name resolution
 
@@ -134,6 +134,31 @@ rules
 	[[ PatternTuple(plist) ^ (s) : Tuple(ty) ]] :=
 		Map1T [[ plist ^ (s) : ty]].
 		
+	[[ TypeConstruct(id, arg) ^ (s) : funcRetTy ]] :=
+		Const{id} -> s, 
+	  	Const{id} |-> d,
+	  	d : constructTy,
+	    ty2 instOf ty,
+	    [[ arg ^ (s) : argTy ]],
+	    ty2 == Function(argTy, funcRetTy).
+    
+    // Union types
+    
+    [[ TypeDefinition(id, TypeEscaped(a, alist)) ^ (s) : UnionType(id) ]] :=
+    	TypeEscaped [[ a ^ (s) : UnionType(id) ]],
+    	Map1UT(TypeEscaped) [[ alist ^ (s) : UnionType(id) ]],
+		Const{id} <- s,
+		Const{id} : UnionType(id).
+    	
+    TypeEscaped [[ TypedID(id, type) ^ (s) : unionTy ]] :=
+    	[[ type ^ (s) : ty ]],
+		Const{id} <- s,
+		Const{id} : Function(ty, unionTy).
+		
+    TypeEscaped [[ TypeConstIdentifier(id) ^ (s) : unionTy ]] :=
+		Const{id} <- s,
+		Const{id} : unionTy.
+		
 	// Type parameters
     
     [[ TypeDefinition(id, def) ^ (s) : ty ]] :=
@@ -151,21 +176,6 @@ rules
         	
 	[[ TypeTuple(plist) ^ (s) : Tuple(ty) ]] :=
 		Map1T [[ plist ^ (s) : ty]].
-    
-    // Union types
-    
-    [[ TypeEscaped(a, alist) ^ (s) : unionTy ]] :=
-    	TypeEscaped [[ a ^ (s) : unionTy ]],
-    	Map1UT(TypeEscaped) [[ alist ^ (s) : unionTy ]].
-    	
-    TypeEscaped [[ TypedID(id, type) ^ (s) : unionTy ]] :=
-    	[[ type ^ (s) : ty ]],
-		Const{id} <- s,
-		Const{id} : Function(ty, unionTy).
-		
-    TypeEscaped [[ TypeConstIdentifier(id) ^ (s) : unionTy ]] :=
-		Const{id} <- s,
-		Const{id} : unionTy.
 		
   	// Function return types
    

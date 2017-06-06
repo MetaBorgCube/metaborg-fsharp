@@ -1,0 +1,33 @@
+module TypeDefinitionTest
+
+language minifsharp
+start symbol Program
+
+fixture [[
+								[[...]]
+								[<EntryPoint>] 
+								let main args = 1
+]]
+
+// Type Definitions
+
+test empty type constructor	[[
+								type Entry = Some of int | [[None]]
+								let test (a : Entry) : int = match a with
+									| Some 8 -> 1
+									| [[None]] -> 2	
+							]]  resolve #2 to #1
+							
+test argument type constructor	[[
+								type Entry = [[Some]] of int | None
+								let test (a : Entry) : int = match a with
+									| [[Some 8]] -> 1
+									| None -> 2	
+							]]  resolve #2 to #1
+							
+test union type definition	[[
+								type [[Entry]] = Some of int | None
+								let test (a : [[Entry]]) : int = match a with
+									| Some 8 -> 1
+									| None -> 2	
+							]]  resolve #2 to #1

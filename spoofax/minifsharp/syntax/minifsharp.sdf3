@@ -170,9 +170,7 @@ context-free syntax
 
 	// Patterns
 	
-	Pattern.TypeConst				= <<TypeConstIdentifier> <Const?>>
-	Pattern.TypeConstIdentifier		= <<TypeConstIdentifier> <Identifier?>>
-
+	Pattern.TypeConstruct			= <<TypeConstIdentifier> <Pattern>>								{prefer}
 	OuterPattern                    = Pattern
 	OuterPattern.OuterPatternTuple  = RawPatternTuple
 
@@ -187,7 +185,7 @@ context-free syntax
 																	 													ge(col(first(3)),col(first(1)))))}
 
 	Pattern.Const					= <<Const>>
-	Pattern.Identifier				= <<Identifier>>
+	Pattern.Identifier				= <<Identifier>>												{avoid}
 	Pattern.NestedPatternTuple		= <(<RawPatternTuple>)>
 	Pattern							= <(<Pattern>)>													{bracket}
 
