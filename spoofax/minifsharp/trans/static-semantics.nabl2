@@ -16,6 +16,7 @@ signature
     	Forall : list(Var) * Term -> Term
     	TVar : String -> Term
     	Origin : String
+    	Union : list(Type) -> Type 
     	
   	name resolution
 
@@ -135,8 +136,8 @@ rules
     
     [[ TypeDefinition(id, def) ^ (s) : ty ]] :=
 		[[ def ^ (s) : ty ]],
-		Type{id} <- s,
-		Type{id} : ty.
+		Const{id} <- s,
+		Const{id} : ty.
     	
     [[ SingleType(t) ^ (s) : ty ]] :=
 		[[ t ^ (s) : ty ]].
@@ -149,7 +150,21 @@ rules
 	[[ TypeTuple(plist) ^ (s) : Tuple(ty) ]] :=
 		Map1T [[ plist ^ (s) : ty]].
     
-  
+    // Union types
+    
+    [[ TypeEscaped(a, alist) ^ (s) : TypeOr([ty|tylist]) ]] :=
+    	TypeEscaped [[ a ^ (s) : ty ]],
+    	Map1T(TypeEscaped) [[ alist ^ (s) : tylist ]].
+    	
+    TypeEscaped [[ TypedID(id, type) ^ (s) : ty ]] :=
+    	[[ type ^ (s) : ty ]],
+		Const{id} <- s,
+		Const{id} : Function(ty, ty).
+		
+    TypeEscaped [[ TypeConstIdentifier(id) ^ (s) : ty ]] :=
+		Const{id} <- s,
+		Const{id} : ty.
+		
   	// Function return types
    
 	GetSpecifiedRetTy [[ None() ^ (s) : ty ]] := true.		 	// No return type specified; no additional constraint
@@ -159,6 +174,11 @@ rules
 	// Expressions and Values
 	
   	[[ Identifier(id) ^ (s) : ty]] :=
+	  	Const{id} -> s, 
+	  	Const{id} |-> d,
+	  	d : ty.
+	
+  	[[ TypeConstIdentifier(id) ^ (s) : ty]] :=
 	  	Const{id} -> s, 
 	  	Const{id} |-> d,
 	  	d : ty.
