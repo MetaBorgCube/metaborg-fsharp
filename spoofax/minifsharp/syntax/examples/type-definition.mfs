@@ -1,0 +1,15 @@
+// Standard Type Usage
+type I = int
+
+let x (a : I) : I = a
+
+
+// Union Type Usage
+type Entry = Some of int | None
+
+let a : Entry = Some 8
+let b : Entry = None
+
+
+[<EntryPoint>]
+let mainq arg = 1

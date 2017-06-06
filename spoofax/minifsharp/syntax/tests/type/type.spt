@@ -1,7 +1,7 @@
 module TypeTest
 language minifsharp
 
-start symbol Expression
+start symbol OuterExp
 
 fixture [[
 	type newType = [[...]]
@@ -16,7 +16,6 @@ test type type id				[[A]] parse succeeds
 test type int list				[[int list]] parse succeeds
 test type bool list				[[bool list]] parse succeeds
 test type id list				[[a list]] parse succeeds
-test type specification			[[A of int]] parse succeeds
 test type tuple simple			[[a * a]] parse succeeds
 test type tuple multiple		[[a * a * a * a]] parse succeeds
 test type tuple incorrect		[[* a * a * a * a]] parse fails
@@ -24,8 +23,9 @@ test type encap					[[(int)]] parse succeeds
 
 // Union Types
 
-// test type union					[[A | B]] parse succeeds
-// test type union leading bar		[[| A | B]] parse succeeds
-// test type specification			[[A | B of int]] parse succeeds
-// test type int list type			[[A | B of int list]] parse succeeds
-// test type tuple					[[A | B of int * bool]] parse succeeds
+test type union					[[A | B]] parse succeeds
+test type union leading bar		[[| A | B]] parse succeeds
+
+test type specification			[[A | B of int]] parse succeeds
+test type int list type			[[A | B of int list]] parse succeeds
+test type tuple					[[A | B of int * bool]] parse succeeds

@@ -159,13 +159,12 @@ context-free syntax
 
 	Type.IntegerType			= <int>
 	Type.BooleanType			= <bool>
-	Type.Identifier				= <<Identifier>>
-	Type.ListType				= <<Type> list>														{layout(			gt(col(first(2)),col(first(1))))}
-	Type.TypedID				= <<TypedID>>
-	Type.TypeConstIdentifier	= <<TypeConstIdentifier>>
-	TypedID.TypedID				= <<TypeConstIdentifier> of <Type>>									{layout(and(		gt(col(first(2)),col(first(1))),
+	Type.Identifier				= <<Identifier>>													{avoid}
+	Type.ListType				= <<Type> list>		
+	TypedID.TypedID				= <<TypeConstIdentifier> of <OuterType>>							{layout(and(		gt(col(first(2)),col(first(1))),
 																	 													gt(col(first(3)),col(first(1)))))}
 	TypedID.TypeConstIdentifier	= <<TypeConstIdentifier>>
+	Type.TypeConstIdentifier	= <<TypeConstIdentifier>>											{prefer}
 	Type						= <(<Type>)>														{bracket}
 	Type.NestedTypeTuple		= <(<RawTypeTuple>)>
 
@@ -190,6 +189,7 @@ context-free syntax
 	Pattern.Const					= <<Const>>
 	Pattern.Identifier				= <<Identifier>>
 	Pattern.NestedPatternTuple		= <(<RawPatternTuple>)>
+	Pattern							= <(<Pattern>)>													{bracket}
 
 syntax
 
