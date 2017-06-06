@@ -12,10 +12,6 @@ imports
   src-gen/nabl2/static-semantics
   
 
-signature
-  constructors
-	FreeVar               : Int * Term -> X
-	ArgVar               : Int * Term -> X
 rules
 
 	
@@ -41,7 +37,8 @@ rules
 		brrr := <debug(|"...1 ");getFreeVars;debug(|"...2 ")> ([], bzzz);
 		bfff := <debug(|"...3 ");map(nabl2-get-ast-type);debug(|"...4 ")> brrr;
 		bqqq := <debug(|"...5 ");mapconcat(\x->(x, func)\;program-to-cil);debug(|"...6 ")> brrr;
-		blll := <concat> [bqqq, [NewObj(<concat-strings> [name, "_0"], [])]];
+		
+		blll := <concat> [bqqq, [NewObj(<concat-strings> [name, "_0"], <map(type-to-cil)> bfff)]];
 		funTy := <nabl2-get-ast-type;strip-forall> a;
 		argTy := <nabl2-get-ast-type;strip-forall> b;
 		result :=  <debug2;concat> [blll, <debugq;program-to-cil;debugw> (b, func), [CallVirt(<type-to-cil> funTy)]]
@@ -133,33 +130,53 @@ rules
 		fields 		 := <debuge;map(generateField)> all_fields;
 		ctor 		 := <debugf;generateConstructor> (funcName, processedArgs, baseClass, freeVars);
 		retTy 		 := <debugg;type-to-cil> y;
-		instructions := <debugh;generateInvokeImplementation> (funTy, name, processedArgs, argTl);
+		instructions := <debugh;generateInvokeImplementation> (funTy, name, processedArgs, argTl, freeVars);
 		genericVars  := <getOptionalGenericVars> funTy;
 		function     := FunctionDefinition(funcName, genericVars, baseClass, fields, ctor, retTy, instructions);
 		nextFunction := <debugi;curriedFunction-to-cil> (funTy, y, name, <concat> [processedArgs, [argHd]], argTl, freeVars);
 		result 		 := <concat> [[function], nextFunction] 
 		
-	// no more args to process; this is the final call; don't return a new function, but return the function result.
-	generateInvokeImplementation: (funTy, className, processed, []) -> <concat> [
-		<mapconcat(\x -> [LoadArg("0"), LoadField(<debug9;arg-type-to-cil;debug0> (funTy,<getIdentifierName>x,processed), <debug1;concat-strings> [className, "_", <length;int-to-string> processed], <getIdentifierName>x)] \)> processed,
-		[LoadArg("1"), Call(<debug2;ret-type-to-cil> funTy, <concat-strings> ["get_", className], <map(\x -> "int32"\)> [Identifier("q") | processed]), Ret()] // hack: add current param
-	]
-	
+		
 	loadArg: (processed, funTy, className, x) -> result with 
 		fldType := <debugm;arg-type-to-cil;debugn> (funTy,<getIdentifierName>x, processed);
 		cName 	:= <debugo;concat-strings> [className, "_", <length;int-to-string> processed];
 		fldName := <getIdentifierName> x;
 		result := [LoadArg("0"), LoadField(fldType, cName, fldName)] 
 	loadArgs: (processed, funTy, className) -> <mapconcat(\x -> <loadArg> (processed, funTy, className, x)\)> processed
+
+	loadFreeVar: (className, freeVar) -> result with
+		ty        := <nabl2-get-ast-type; type-to-cil> freeVar;
+		fieldName := <getIdentifierName> freeVar;
+		result    := [LoadArg("0"), LoadField(ty, className, fieldName)]
+	loadFreeVars: (className, freeVars) -> result with
+		result := <debug(|"~~~1 ");mapconcat(\x -> (className, x)\; loadFreeVar; debug(|"~~~1 "))> freeVars
 	
-	generateInvokeImplementation: (funTy, className, processed, nextArgs) -> result with
-	tmp := <debug(|">>> ")> nextArgs;
-	loadAllArgs := <loadArgs> (processed, funTy, className);
-	createObj := NewObj(<concat-strings> [className, "_", <addS> ("1", <length;int-to-string> processed)], <map(\x -> "int32"\)> [Identifier("bla") | processed]); // dirty hack
-	result := <concat> [
-		loadAllArgs,
-		[LoadArg("1"), createObj, Ret()] 
- 	]
+	// no more args to process; this is the final call; don't return a new function, but return the function result.
+	generateInvokeImplementation: (funTy, className, processed, [], freeVars) -> result with 
+//		q := <mapconcat(\x -> [LoadArg("0"), LoadField(<arg-type-to-cil> (funTy,<getIdentifierName>x,processed), <concat-strings> [className, "_", <length;int-to-string> processed], <getIdentifierName>x)] \)> processed;
+		loadCurriedArgs := <loadArgs> (processed, funTy, className);
+		loadFreeVars := <loadFreeVars> (<debugo;concat-strings> [className, "_", <length;int-to-string> processed], freeVars);
+//		funcArgs := 
+		argTys := <debug(|"@@@3 ");map(\x -> "int32"\)> [Identifier("q") | processed];
+		freeVarTys := <debug(|"@@@1 "); map(nabl2-get-ast-type;type-to-cil);debug(|"@@@2 ")> freeVars;
+		tys := <concat> [argTys, freeVarTys];
+		funcName := <concat-strings> ["get_", className];
+		result := <concat> [
+			loadCurriedArgs,
+			[LoadArg("1")], // load the argument of this invoke
+			loadFreeVars,
+			[Call(<debug2;ret-type-to-cil> funTy, funcName, tys), Ret()] // hack: add current param
+		]
+	
+	generateInvokeImplementation: (funTy, className, processed, nextArgs, freeVars) -> result with
+		loadCurriedArgs := <loadArgs> (processed, funTy, className);
+		loadFreeVars := <loadFreeVars> (<debugo;concat-strings> [className, "_", <length;int-to-string> processed], freeVars);
+		createObj := NewObj(<concat-strings> [className, "_", <addS> ("1", <length;int-to-string> processed)], <map(\x -> "int32"\)> [Identifier("bla") | processed]); // dirty hack
+		result := <concat> [
+			loadCurriedArgs,
+			loadFreeVars,
+			[LoadArg("1"), createObj, Ret()] 
+	 	]
  
  	getCurriedType: (retTy, []) -> "int32"
  	getCurriedType: (retTy, [argTyHd | argTyTl]) -> <concat-strings> ["class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2<int32,", <getCurriedType> (retTy, argTyTl), ">"]
