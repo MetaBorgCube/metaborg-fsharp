@@ -21,41 +21,49 @@ rules
 		result := <debug0; desugar-all; program-to-cil; pp-debug> ast
 
 	program-to-cil: Program(e,l@Let(a,b,c,d)) -> ProgramCil(<concat> [[Method("int32", a, None(), [], <program-to-cil> (d, l))], <nonEntryPoints-to-cil> e], a)
-	
-	
-	
-	// For Application(a,b) we need to distinguish two cases: say there is a function f with 2 args. 
-	// Case 1: application is on f with 1 arg: a resolves to a let binding. We need to pass extra params to the constructor here.
-	// Case 2: application is on already curried; a does nont resolve to a let binding. No extra params in constructor.
-	
-	// case 1:
-	program-to-cil: (z@Application(a@Identifier(name),b), func) -> result with
-		q         := <nabl2-get-ast-analysis;debugx> name;
-		ref-occ   := <nabl2-mk-occurrence(|"Funcs");debugy> name;
-		dec-occ   := <nabl2-get-resolved-name(|q); Fst; debugz> ref-occ;
-		bzzz := <nabl2-get-type(|q);debug(|"zom3 ")> dec-occ;
-		brrr := <debug(|"...1 ");getFreeVars;debug(|"...2 ")> ([], bzzz);
-		bfff := <debug(|"...3 ");map(nabl2-get-ast-type);debug(|"...4 ")> brrr;
-		bqqq := <debug(|"...5 ");mapconcat(\x->(x, func)\;program-to-cil);debug(|"...6 ")> brrr;
 		
-		blll := <concat> [bqqq, [NewObj(<concat-strings> [name, "_0"], <map(type-to-cil)> bfff)]];
+	nonEntryPoints-to-cil: None() -> []
+	nonEntryPoints-to-cil: Some(x) -> <listifyExprBlock; map(let-to-cil); concat> x
+	
+	
+	
+// Application	
+	
+	// first application: a is an identifier, hence need to call constructor with free vars as parameters
+	program-to-cil: (z@Application(a@Identifier(name),b), func) -> result with
 		funTy := <nabl2-get-ast-type;strip-forall> a;
-		argTy := <nabl2-get-ast-type;strip-forall> b;
-		result :=  <debug2;concat> [blll, <debugq;program-to-cil;debugw> (b, func), [CallVirt(<type-to-cil> funTy)]]
+		node         := <nabl2-get-ast-analysis> name;
+		ref-occ      := <nabl2-mk-occurrence(|"Funcs")> name;
+		dec-occ      := <nabl2-get-resolved-name(|node); Fst> ref-occ;
+		targetFunc   := <nabl2-get-type(|node)> dec-occ;
+		freeVars     := <getFreeVars> ([], targetFunc);
+		freeVarTys   := <map(nabl2-get-ast-type)> freeVars;
+		loadFreeVars := <mapconcat(\x->(x, func)\;program-to-cil)> freeVars;
+		callCtor     := [NewObj(<concat-strings> [name, "_0"], <map(type-to-cil)> freeVarTys)];
+		loadArg      := <program-to-cil> (b, func);
+		invokeFunc   := [CallVirt(<type-to-cil> funTy)];
+		result       :=  <concat> [
+			loadFreeVars, 
+			callCtor, 
+			loadArg, 
+			invokeFunc
+		]
 	
-	
+	// not the first application: a is not an identifier, hence no need to call constructor with free vars as parameters
 	program-to-cil: (z@Application(a,b), func) -> result with
 		funTy := <nabl2-get-ast-type;strip-forall> a;
-		argTy := <nabl2-get-ast-type;strip-forall> b;
 		result :=  <debug2;concat> [<debug0;program-to-cil;debug1> (a, func), <debugq;program-to-cil;debugw> (b, func), [CallVirt(<type-to-cil> funTy)]]
 	
-	type-to-cil: Forall(_, y) -> <debugk;type-to-cil;debugl> y
+
+// Type related stuff	
+	
+	type-to-cil: Forall(_, y)  -> <debugk;type-to-cil;debugl> y
 	type-to-cil: Function(x,y) -> <concat-strings> ["class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2<", <type-to-cil> x, ",", <type-to-cil> y, ">"]
-	type-to-cil: Int() -> "int32"
-	type-to-cil: Bool() -> "bool"
-	type-to-cil: Tuple(x) -> <concat-strings> ["class [mscorlib]System.Tuple`", <length;int-to-string>x, "<", <separate-by;concat-strings> (",", <map(type-to-cil)> x), ">"]
-	type-to-cil: List(x) -> <concat-strings> ["class [FSharp.Core]Microsoft.FSharp.Collections.FSharpList`1<", <type-to-cil> x, ">"]
-	type-to-cil: TVar(x) -> <concat-strings> ["!!", x]
+	type-to-cil: Int()         -> "int32"
+	type-to-cil: Bool()        -> "bool"
+	type-to-cil: Tuple(x)      -> <concat-strings> ["class [mscorlib]System.Tuple`", <length;int-to-string>x, "<", <separate-by;concat-strings> (",", <map(type-to-cil)> x), ">"]
+	type-to-cil: List(x)       -> <concat-strings> ["class [FSharp.Core]Microsoft.FSharp.Collections.FSharpList`1<", <type-to-cil> x, ">"]
+	type-to-cil: TVar(x)       -> <concat-strings> ["!!", x]
 	
 	arg-type-to-cil: (Forall(_,x), argName, args) -> <arg-type-to-cil> (x, argName, args)
 	arg-type-to-cil: (Function(x,y), argName, [ArgIdentifier(argName) | _]) -> <type-to-cil> x
@@ -71,29 +79,47 @@ rules
 	genericVarListToOption: x -> Some(GenericTypeIndicator(x))
 	getOptionalGenericVars: x -> <getGenericVarList; genericVarListToOption> x
 	
-	
-	getLetArgs: Let   (_, args, _, _) -> args
-	getLetArgs: LetRec(_, args, _, _) -> args
-	
+	strip-forall: Forall(x,y) -> y
+	strip-forall: x -> x
 	
 	
-	// todo: return absolute index (Func(args, freeVars))
-	getArg: (name, func) -> result with
-		tmp := <getFreeVars> ([], func);
-		idx := <debug(|"test3: ");getFreeVarIndex;debug(|"test4: ")> (tmp, name);
-		idx2 := <debug(|"test5: ");getFreeVarIndex;debug(|"test6: ")> (<getLetArgs>func, name);
-		if <lt> (idx, 0) then result := idx2 else  result := <add> (<getLetArgs;length> func, idx) end
+// Misc cil-generation
 
-	program-to-cil: (v@Identifier(name), func) -> result with 
-		testz := <debug(|"test1: ");getArg;debug(|">>>>test2: ")> (v,func);
-		result := [LoadArg(<int-to-string> testz)]
-	
 	program-to-cil: (ExprBlock(exp, None()), func) -> <program-to-cil> (exp, func)
 	program-to-cil: (ExprBlock(exp, Some(next)), func) -> <concat> [<program-to-cil> (exp, func), <program-to-cil> (next, func)]
 	
 	program-to-cil: (Const(Integer(x)), func) -> [Ldc(x)]
-	program-to-cil: (BinaryOperation(op, a, b), func) -> <concat> [<program-to-cil> (a, func), <program-to-cil> (b, func), <binop-to-cil> op]
 	
+	program-to-cil: (BinaryOperation(op, a, b), func) -> <concat> [<program-to-cil> (a, func), <program-to-cil> (b, func), <binop-to-cil> op]
+	binop-to-cil: PlusOp() -> [Add()]
+	binop-to-cil: MinOp()  -> [Sub()]
+	binop-to-cil: MultOp() -> [Mul()]	
+	
+	program-to-cil: (v@Identifier(name), func) -> [LoadArg(<getArg;int-to-string> (v,func))]
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+	getLetArgs: Let   (_, args, _, _) -> args
+	getLetArgs: LetRec(_, args, _, _) -> args
+
+	// returns index of the identifier in the sequence [param1, ..., paramn, freeVar1, ..., freeVarn] 
+	getArg: (identifier, func) -> result with
+		freeVars   := <getFreeVars> ([], func);
+		freeVarIdx := <getIdentifierIndex> (freeVars, identifier);
+		paramIndex := <getIdentifierIndex> (<getLetArgs>func, identifier);
+		numParams  := <getLetArgs;length> func;
+		if <lt> (freeVarIdx, 0) then result := paramIndex else  result := <add> (numParams, freeVarIdx) end
+
+
+	
+
 	program-to-cil: (Let(_,_,_,_), func) -> [] // required for nested lets; can't have a function definition in a function body
 	
 	let-to-cil: a @ Let(name,args,retTy,body) -> result with 
@@ -111,8 +137,6 @@ rules
 	let-to-cil: _ -> []
 
 
-	strip-forall: Forall(x,y) -> y
-	strip-forall: x -> x
  
 	getIdentifierName: ArgIdentifier(x) -> x
 	getIdentifierName: TypedArgIdentifier(x, _) -> x
@@ -137,12 +161,10 @@ rules
 		result 		 := <concat> [[function], nextFunction] 
 		
 		
-	loadArg: (processed, funTy, className, x) -> result with 
-		fldType := <debugm;arg-type-to-cil;debugn> (funTy,<getIdentifierName>x, processed);
-		cName 	:= <debugo;concat-strings> [className, "_", <length;int-to-string> processed];
-		fldName := <getIdentifierName> x;
-		result := [LoadArg("0"), LoadField(fldType, cName, fldName)] 
-	loadArgs: (processed, funTy, className) -> <mapconcat(\x -> <loadArg> (processed, funTy, className, x)\)> processed
+	loadArg: (processed, funTy, className, identifierName) -> result with 
+		fldType := <debugm;arg-type-to-cil;debugn> (funTy,identifierName, processed);
+		result := [LoadArg("0"), LoadField(fldType, className, identifierName)] 
+	loadArgs: (processed, funTy, className) -> <mapconcat(\x -> <loadArg> (processed, funTy, className, <getIdentifierName> x)\)> processed
 
 	loadFreeVar: (className, freeVar) -> result with
 		ty        := <nabl2-get-ast-type; type-to-cil> freeVar;
@@ -154,7 +176,8 @@ rules
 	// no more args to process; this is the final call; don't return a new function, but return the function result.
 	generateInvokeImplementation: (funTy, className, processed, [], freeVars) -> result with 
 //		q := <mapconcat(\x -> [LoadArg("0"), LoadField(<arg-type-to-cil> (funTy,<getIdentifierName>x,processed), <concat-strings> [className, "_", <length;int-to-string> processed], <getIdentifierName>x)] \)> processed;
-		loadCurriedArgs := <loadArgs> (processed, funTy, className);
+		objName := <debugo;concat-strings> [className, "_", <length;int-to-string> processed];
+		loadCurriedArgs := <loadArgs> (processed, funTy, objName);
 		loadFreeVars := <loadFreeVars> (<debugo;concat-strings> [className, "_", <length;int-to-string> processed], freeVars);
 //		funcArgs := 
 		argTys := <debug(|"@@@3 ");map(\x -> "int32"\)> [Identifier("q") | processed];
@@ -169,7 +192,8 @@ rules
 		]
 	
 	generateInvokeImplementation: (funTy, className, processed, nextArgs, freeVars) -> result with
-		loadCurriedArgs := <loadArgs> (processed, funTy, className);
+		objName := <debugo;concat-strings> [className, "_", <length;int-to-string> processed];
+		loadCurriedArgs := <loadArgs> (processed, funTy, objName);
 		loadFreeVars := <loadFreeVars> (<debugo;concat-strings> [className, "_", <length;int-to-string> processed], freeVars);
 		argTys := <debug(|"@@@3 ");map(\x -> "int32"\)> [Identifier("q") | processed];       // todo: remove this dirty hack
 		freeVarTys := <debug(|"@@@1 "); map(nabl2-get-ast-type;type-to-cil);debug(|"@@@2 ")> freeVars;
@@ -218,12 +242,10 @@ rules
 		result := Ctor(all_params, body)
 
 	
-	binop-to-cil: PlusOp() -> [Add()]
-	binop-to-cil: MinOp()  -> [Sub()]
-	binop-to-cil: MultOp() -> [Mul()]
+
+
 	
-	nonEntryPoints-to-cil: None() -> []
-	nonEntryPoints-to-cil: Some(x) -> <listifyExprBlock; map(let-to-cil); concat> x
+	
 	
 	listifyExprBlock: ExprBlock(exp, Some(next)) -> <concat> [[exp], <listifyExprBlock> next]
 	listifyExprBlock: ExprBlock(exp, None()) -> [exp]
@@ -232,15 +254,16 @@ rules
 	
 	getFreeVars: (scope, None()) -> [] 
 	getFreeVars: (scope, Some(x)) -> <getFreeVars> (scope, x)
-	getFreeVars: (scope, ExprBlock(exp, tail)) -> <concat> [<getFreeVars> (scope, exp), <getFreeVars> (<concat> [scope, args], tail)] with 
-		args := <getExprBlockArgs> (scope, exp)
+	getFreeVars: (scope, ExprBlock(exp, tail)) -> result with  
+		args   := <getExprBlockArgs> (scope, exp);
+		result := <concat> [<getFreeVars> (scope, exp), <getFreeVars> (<concat> [scope, args], tail)]
 	getFreeVars: (scope, BinaryOperation(op, a, b)) -> <concat> [<getFreeVars> (scope, a), <getFreeVars> (scope, b)]
 	getFreeVars: (scope, Const(_)) -> []
-	getFreeVars: (scope, x@Identifier(_)) -> <debug(|"b1: ");getFreeVar;debug(|"werkt niet: ")> (scope, x)
+	getFreeVars: (scope, x@Identifier(_)) -> <getFreeVar> (scope, x)
 	getFreeVars: (scope, Application(a,b)) -> <concat> [<getFreeVars> (scope, a), <getFreeVars> (scope, b)]
-	getFreeVars: (scope, Let(name,args,retTy,body)) -> <getFreeVars> (newscope, body) with
-		argscope :=  args;
-		newscope := <debug(|"blabla: ");concat;debug(|"nieuw scopie: ")> [argscope, scope]
+	getFreeVars: (scope, Let(name,args,retTy,body)) -> result with
+		newscope := <concat> [args, scope];
+		result   := <getFreeVars> (newscope, body)
 	
 	getExprBlockArgs: (scope, l@Let(_, _, _, _)) -> [l]
 	getExprBlockArgs: (scope, l@LetRec(_, _, _, _)) -> [l]
@@ -248,14 +271,15 @@ rules
 	getExprBlockArgs: (scope, _) -> []
 	
 	
-	indexOf: ([], var, idx) -> None()
+
+	// helpers for getIdentifierIndex.
+	indexOf: ([]        , var, idx) -> -1
 	indexOf: ([var | tl], var, idx) -> idx
 	indexOf: ([_   | tl], var, idx) -> <indexOf> (tl, var, <add> (idx, 1))
-	
-		
-	getFreeVarIndex: (vars, var) -> result with
-		var_names := <debug(|"b3: ");map(getIdentifierName;strip-annos);debug(|"b4: ")> vars;
-		var_name  := <debug(|"b5: ");getIdentifierName;strip-annos> var;
+	// returns the index of var in the list vars, or -1 if not present. Uses only the name in the identifier.
+	getIdentifierIndex: (vars, var) -> result with
+		var_names := <map(getIdentifierName;strip-annos)> vars;
+		var_name  := <getIdentifierName;strip-annos> var;
 		result 	  := <indexOf> (var_names, var_name, 0)
 		
 	getFreeVar: (vars, var) -> result with 
