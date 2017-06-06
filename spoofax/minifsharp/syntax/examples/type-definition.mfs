@@ -10,6 +10,14 @@ type Entry = Some of int | None
 let a : Entry = Some 8
 let b : Entry = None
 
+let test (a : Entry) = match a with
+	| None -> 2
+	| Some 2 -> 3
+	| Some 4 -> 3
+	| Some 5 -> 3
+	| Some 6 -> 3
+	| Some _ -> 3
+
 
 [<EntryPoint>]
 let mainq arg = 1
