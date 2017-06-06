@@ -24,7 +24,7 @@ rules
 	      a         := <nabl2-get-ast-analysis; debug1> ast;
 		result := <debug0; desugar-all; program-to-cil; pp-debug> ast
 
-	program-to-cil: Program(e,Let(a,b,c,d)) -> ProgramCil(<concat> [[Method("int32", a, None(), [], <let-to-cil> d)], <nonEntryPoints-to-cil> e], a)
+	program-to-cil: Program(e,l@Let(a,b,c,d)) -> ProgramCil(<concat> [[Method("int32", a, None(), [], <program-to-cil> (d, l))], <nonEntryPoints-to-cil> e], a)
 	
 	
 	
@@ -104,8 +104,11 @@ rules
 		returnType 	 := <debug(|"retTy inp: ");ret-type-to-cil;debug(|"retTy out: ")> tmp;
 		argTypes 	 := <map(\x -> <debugz;arg-type-to-cil;debugx> (tmp, <getIdentifierName> x, args)\)> args;
 		genericTypes := <debug(|"baz: ");getOptionalGenericVars;debug(|"baq: ")> tmp;
-		method 		 := Method(returnType, name, genericTypes, argTypes, <program-to-cil> (body, a)); // todo: add freevar args
-		freeVars 	 := <debug(|"###1 ");getFreeVars; debug(|"###2 ")> ([], a);
+		freeVars 	 := <debug(|"baz11: ");getFreeVars;debug(|"baz22: ")> ([], a);
+		freeVarTypes := <map(nabl2-get-ast-type; strip-forall; type-to-cil)> freeVars;
+		allArgTypes  := <concat>  [argTypes, freeVarTypes];
+		method 		 := Method(returnType, name, genericTypes, allArgTypes, <program-to-cil> (body, a)); // todo: add freevar args
+//		freeVars 	 := <debug(|"###1 ");getFreeVars; debug(|"###2 ")> ([], a);
 		curriedFunc  := <debug4;curriedFunction-to-cil;debug5> (tmp, tmp, name, [], args, freeVars);
 		result 	 	 := <concat;debug6> [[method], curriedFunc, <listifyExprBlock;mapconcat(let-to-cil)> body]
 	let-to-cil: _ -> []
