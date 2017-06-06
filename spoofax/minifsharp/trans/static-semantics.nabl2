@@ -16,7 +16,7 @@ signature
     	Forall : list(Var) * Term -> Term
     	TVar : String -> Term
     	Origin : String
-    	Union : list(Type) -> Type 
+    	Constructor : Type * Type -> Type
     	
   	name resolution
 
@@ -152,18 +152,18 @@ rules
     
     // Union types
     
-    [[ TypeEscaped(a, alist) ^ (s) : Union([ty|tylist]) ]] :=
-    	TypeEscaped [[ a ^ (s) : ty ]],
-    	Map1T(TypeEscaped) [[ alist ^ (s) : tylist ]].
+    [[ TypeEscaped(a, alist) ^ (s) : unionTy ]] :=
+    	TypeEscaped [[ a ^ (s) : unionTy ]],
+    	Map1UT(TypeEscaped) [[ alist ^ (s) : unionTy ]].
     	
-    TypeEscaped [[ TypedID(id, type) ^ (s) : ty ]] :=
+    TypeEscaped [[ TypedID(id, type) ^ (s) : unionTy ]] :=
     	[[ type ^ (s) : ty ]],
 		Const{id} <- s,
-		Const{id} : Function(ty, ty).
+		Const{id} : Function(ty, unionTy).
 		
-    TypeEscaped [[ TypeConstIdentifier(id) ^ (s) : ty ]] :=
+    TypeEscaped [[ TypeConstIdentifier(id) ^ (s) : unionTy ]] :=
 		Const{id} <- s,
-		Const{id} : ty.
+		Const{id} : unionTy.
 		
   	// Function return types
    
