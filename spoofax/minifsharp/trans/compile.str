@@ -17,8 +17,8 @@ rules
 	
 	show-cil: (selected, _, ast, path, project-path) -> (filename, result) with
 	    filename := <guarantee-extension(|$[cil])> path;
-	      a         := <nabl2-get-ast-analysis; debug1> ast;
-		result := <debug0; desugar-all; program-to-cil; pp-debug> ast
+	      a         := <nabl2-get-ast-analysis> ast;
+		result := <desugar-all; program-to-cil; pp-debug> ast
 
 	program-to-cil: Program(e,l@Let(a,b,c,d)) -> ProgramCil(<concat> [[Method("int32", a, None(), [], <program-to-cil> (d, l))], <nonEntryPoints-to-cil> e], a)
 		
@@ -52,12 +52,12 @@ rules
 	// not the first application: a is not an identifier, hence no need to call constructor with free vars as parameters
 	program-to-cil: (z@Application(a,b), func) -> result with
 		funTy := <nabl2-get-ast-type;strip-forall> a;
-		result :=  <debug2;concat> [<debug0;program-to-cil;debug1> (a, func), <debugq;program-to-cil;debugw> (b, func), [CallVirt(<type-to-cil> funTy)]]
+		result :=  <concat> [<program-to-cil> (a, func), <program-to-cil> (b, func), [CallVirt(<type-to-cil> funTy)]]
 	
 
 // Type related stuff	
 	
-	type-to-cil: Forall(_, y)  -> <debugk;type-to-cil;debugl> y
+	type-to-cil: Forall(_, y)  -> <type-to-cil> y
 	type-to-cil: Function(x,y) -> <concat-strings> ["class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2<", <type-to-cil> x, ",", <type-to-cil> y, ">"]
 	type-to-cil: Int()         -> "int32"
 	type-to-cil: Bool()        -> "bool"
@@ -82,7 +82,10 @@ rules
 	strip-forall: Forall(x,y) -> y
 	strip-forall: x -> x
 	
-	
+	getCurriedType: (retTy, []) -> "int32"
+ 	getCurriedType: (retTy, [argTyHd | argTyTl]) -> <concat-strings> ["class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2<int32,", <getCurriedType> (retTy, argTyTl), ">"]
+ 
+ 
 // Misc cil-generation
 
 	program-to-cil: (ExprBlock(exp, None()), func) -> <program-to-cil> (exp, func)
@@ -97,7 +100,7 @@ rules
 	
 	program-to-cil: (v@Identifier(name), func) -> [LoadArg(<getArg;int-to-string> (v,func))]
 		
-		
+	program-to-cil: (Let(_,_,_,_), func) -> [] // functions are compiled elsewhere; don't try to compile them into other function bodies
 		
 		
 		
@@ -117,23 +120,17 @@ rules
 		numParams  := <getLetArgs;length> func;
 		if <lt> (freeVarIdx, 0) then result := paramIndex else  result := <add> (numParams, freeVarIdx) end
 
-
-	
-
-	program-to-cil: (Let(_,_,_,_), func) -> [] // required for nested lets; can't have a function definition in a function body
-	
 	let-to-cil: a @ Let(name,args,retTy,body) -> result with 
-		tmp 	   	 := <nabl2-get-ast-type; strip-forall; debugq> a;
-		returnType 	 := <debug(|"retTy inp: ");ret-type-to-cil;debug(|"retTy out: ")> tmp;
-		argTypes 	 := <map(\x -> <debugz;arg-type-to-cil;debugx> (tmp, <getIdentifierName> x, args)\)> args;
-		genericTypes := <debug(|"baz: ");getOptionalGenericVars;debug(|"baq: ")> tmp;
-		freeVars 	 := <debug(|"baz11: ");getFreeVars;debug(|"baz22: ")> ([], a);
+		tmp 	   	 := <nabl2-get-ast-type; strip-forall> a;
+		returnType 	 := <ret-type-to-cil> tmp;
+		argTypes 	 := <map(\x -> <arg-type-to-cil> (tmp, <getIdentifierName> x, args)\)> args;
+		genericTypes := <getOptionalGenericVars> tmp;
+		freeVars 	 := <getFreeVars> ([], a);
 		freeVarTypes := <map(nabl2-get-ast-type; strip-forall; type-to-cil)> freeVars;
 		allArgTypes  := <concat>  [argTypes, freeVarTypes];
-		method 		 := Method(returnType, name, genericTypes, allArgTypes, <program-to-cil> (body, a)); // todo: add freevar args
-//		freeVars 	 := <debug(|"###1 ");getFreeVars; debug(|"###2 ")> ([], a);
-		curriedFunc  := <debug4;curriedFunction-to-cil;debug5> (tmp, tmp, name, [], args, freeVars);
-		result 	 	 := <concat;debug6> [[method], curriedFunc, <listifyExprBlock;mapconcat(let-to-cil)> body]
+		method 		 := Method(returnType, name, genericTypes, allArgTypes, <program-to-cil> (body, a));
+		curriedFunc  := <curriedFunction-to-cil> (tmp, tmp, name, [], args, freeVars);
+		result 	 	 := <concat> [[method], curriedFunc, <listifyExprBlock;mapconcat(let-to-cil)> body]
 	let-to-cil: _ -> []
 
 
@@ -148,21 +145,21 @@ rules
 	
 	curriedFunction-to-cil: (_, _, _, _, [], freeVars) -> []
 	curriedFunction-to-cil: (funTy, ty@Function(x,y), name, processedArgs, nextArgs@[argHd | argTl], freeVars) -> result with
-		funcName 	 := <debugc;concat-strings> [name, "_", <length;int-to-string>processedArgs];
-		baseClass 	 := <debugd;type-to-cil> ty;
+		funcName 	 := <concat-strings> [name, "_", <length;int-to-string>processedArgs];
+		baseClass 	 := <type-to-cil> ty;
 		all_fields   := <concat> [processedArgs, freeVars];
-		fields 		 := <debuge;map(generateField)> all_fields;
-		ctor 		 := <debugf;generateConstructor> (funcName, processedArgs, baseClass, freeVars);
-		retTy 		 := <debugg;type-to-cil> y;
-		instructions := <debugh;generateInvokeImplementation> (funTy, name, processedArgs, argTl, freeVars);
+		fields 		 := <map(generateField)> all_fields;
+		ctor 		 := <generateConstructor> (funcName, processedArgs, baseClass, freeVars);
+		retTy 		 := <type-to-cil> y;
+		instructions := <generateInvokeImplementation> (funTy, name, processedArgs, nextArgs, freeVars);
 		genericVars  := <getOptionalGenericVars> funTy;
 		function     := FunctionDefinition(funcName, genericVars, baseClass, fields, ctor, retTy, instructions);
-		nextFunction := <debugi;curriedFunction-to-cil> (funTy, y, name, <concat> [processedArgs, [argHd]], argTl, freeVars);
+		nextFunction := <curriedFunction-to-cil> (funTy, y, name, <concat> [processedArgs, [argHd]], argTl, freeVars);
 		result 		 := <concat> [[function], nextFunction] 
 		
 		
 	loadArg: (processed, funTy, className, identifierName) -> result with 
-		fldType := <debugm;arg-type-to-cil;debugn> (funTy,identifierName, processed);
+		fldType := <arg-type-to-cil> (funTy,identifierName, processed);
 		result := [LoadArg("0"), LoadField(fldType, className, identifierName)] 
 	loadArgs: (processed, funTy, className) -> <mapconcat(\x -> <loadArg> (processed, funTy, className, <getIdentifierName> x)\)> processed
 
@@ -171,44 +168,32 @@ rules
 		fieldName := <getIdentifierName> freeVar;
 		result    := [LoadArg("0"), LoadField(ty, className, fieldName)]
 	loadFreeVars: (className, freeVars) -> result with
-		result := <debug(|"~~~1 ");mapconcat(\x -> (className, x)\; loadFreeVar; debug(|"~~~1 "))> freeVars
+		result := <mapconcat(\x -> (className, x)\; loadFreeVar)> freeVars
 	
-	// no more args to process; this is the final call; don't return a new function, but return the function result.
-	generateInvokeImplementation: (funTy, className, processed, [], freeVars) -> result with 
-//		q := <mapconcat(\x -> [LoadArg("0"), LoadField(<arg-type-to-cil> (funTy,<getIdentifierName>x,processed), <concat-strings> [className, "_", <length;int-to-string> processed], <getIdentifierName>x)] \)> processed;
-		objName := <debugo;concat-strings> [className, "_", <length;int-to-string> processed];
-		loadCurriedArgs := <loadArgs> (processed, funTy, objName);
-		loadFreeVars := <loadFreeVars> (<debugo;concat-strings> [className, "_", <length;int-to-string> processed], freeVars);
-//		funcArgs := 
-		argTys := <debug(|"@@@3 ");map(\x -> "int32"\)> [Identifier("q") | processed];
-		freeVarTys := <debug(|"@@@1 "); map(nabl2-get-ast-type;type-to-cil);debug(|"@@@2 ")> freeVars;
-		tys := <concat> [argTys, freeVarTys];
-		funcName := <concat-strings> ["get_", className];
-		result := <concat> [
-			loadCurriedArgs,
-			[LoadArg("1")], // load the argument of this invoke
-			loadFreeVars,
-			[Call(<debug2;ret-type-to-cil> funTy, funcName, tys), Ret()] // hack: add current param
-		]
+	getCurrentArgs: (processed, []) -> processed
+	getCurrentArgs: (processed, [hd|tl]) -> <concat> [processed, [hd]]
 	
 	generateInvokeImplementation: (funTy, className, processed, nextArgs, freeVars) -> result with
-		objName := <debugo;concat-strings> [className, "_", <length;int-to-string> processed];
+		objName         := <concat-strings;debugq> [className, "_", <length;int-to-string> processed];
 		loadCurriedArgs := <loadArgs> (processed, funTy, objName);
-		loadFreeVars := <loadFreeVars> (<debugo;concat-strings> [className, "_", <length;int-to-string> processed], freeVars);
-		argTys := <debug(|"@@@3 ");map(\x -> "int32"\)> [Identifier("q") | processed];       // todo: remove this dirty hack
-		freeVarTys := <debug(|"@@@1 "); map(nabl2-get-ast-type;type-to-cil);debug(|"@@@2 ")> freeVars;
-		tys := <concat> [argTys, freeVarTys];
-		createObj := NewObj(<concat-strings> [className, "_", <addS> ("1", <length;int-to-string> processed)], tys); 
-		result := <concat> [
+		loadFreeVars    := <loadFreeVars> (<concat-strings> [className, "_", <length;int-to-string> processed], freeVars);
+		argTys          := <getCurrentArgs;map(nabl2-get-ast-type;type-to-cil)> (processed, nextArgs);       // Note: does not work for generics
+		freeVarTys      := <map(nabl2-get-ast-type;type-to-cil)> freeVars;
+		tys             := <concat> [argTys, freeVarTys];
+		if <lt> (<length>nextArgs, 2) then 
+			funcName    := <concat-strings> ["get_", className];
+			callNext    := [Call(<ret-type-to-cil> funTy, funcName, tys), Ret()] 
+		else 
+			callNext    := [NewObj(<concat-strings> [className, "_", <addS> ("1", <length;int-to-string> processed)], tys)]
+		end;
+		result          := <concat> [
 			loadCurriedArgs,
 			[LoadArg("1")],
 			loadFreeVars,
-			[createObj] 
+			callNext
 	 	]
  
- 	getCurriedType: (retTy, []) -> "int32"
- 	getCurriedType: (retTy, [argTyHd | argTyTl]) -> <concat-strings> ["class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2<int32,", <getCurriedType> (retTy, argTyTl), ">"]
- 
+
  
  	// a field is a param, but named differently..
 	generateField: x -> <generateParam; \Param(a,b) -> Field(a,b)\> x
@@ -231,7 +216,7 @@ rules
 		result := Param(ty, name)
 	generateConstructor: (className, params, baseType, freeVars) -> result with 
 		curried_params := <map(generateParam)> params;
-		freeVar_params := <debug(|"q1: ");map(generateParam);debug(|"q3: ")> freeVars;
+		freeVar_params := <map(generateParam)> freeVars;
 		all_params     := <concat> [curried_params, freeVar_params];
 		body 		   := <concat> 
 		[
@@ -283,8 +268,8 @@ rules
 		result 	  := <indexOf> (var_names, var_name, 0)
 		
 	getFreeVar: (vars, var) -> result with 
-		var_names := <debug(|"b3: ");map(getIdentifierName);debug(|"b4: ")> vars;
-		var_name := <debug(|"b5: ");getIdentifierName;debug(|"b6: ")> var;
+		var_names := <map(getIdentifierName)> vars;
+		var_name := <getIdentifierName> var;
 		if <strip-annos;elem> (var_name, var_names) then result := [] else result := [var] end
  
 		
