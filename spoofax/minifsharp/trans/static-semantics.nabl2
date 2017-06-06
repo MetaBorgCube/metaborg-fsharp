@@ -152,7 +152,7 @@ rules
     
     // Union types
     
-    [[ TypeEscaped(a, alist) ^ (s) : TypeOr([ty|tylist]) ]] :=
+    [[ TypeEscaped(a, alist) ^ (s) : Union([ty|tylist]) ]] :=
     	TypeEscaped [[ a ^ (s) : ty ]],
     	Map1T(TypeEscaped) [[ alist ^ (s) : tylist ]].
     	
