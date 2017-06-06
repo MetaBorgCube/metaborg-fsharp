@@ -171,11 +171,15 @@ rules
 	generateInvokeImplementation: (funTy, className, processed, nextArgs, freeVars) -> result with
 		loadCurriedArgs := <loadArgs> (processed, funTy, className);
 		loadFreeVars := <loadFreeVars> (<debugo;concat-strings> [className, "_", <length;int-to-string> processed], freeVars);
-		createObj := NewObj(<concat-strings> [className, "_", <addS> ("1", <length;int-to-string> processed)], <map(\x -> "int32"\)> [Identifier("bla") | processed]); // dirty hack
+		argTys := <debug(|"@@@3 ");map(\x -> "int32"\)> [Identifier("q") | processed];       // todo: remove this dirty hack
+		freeVarTys := <debug(|"@@@1 "); map(nabl2-get-ast-type;type-to-cil);debug(|"@@@2 ")> freeVars;
+		tys := <concat> [argTys, freeVarTys];
+		createObj := NewObj(<concat-strings> [className, "_", <addS> ("1", <length;int-to-string> processed)], tys); 
 		result := <concat> [
 			loadCurriedArgs,
+			[LoadArg("1")],
 			loadFreeVars,
-			[LoadArg("1"), createObj, Ret()] 
+			[createObj] 
 	 	]
  
  	getCurriedType: (retTy, []) -> "int32"

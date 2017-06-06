@@ -109,16 +109,16 @@ Field.Field = <.field  public  <Type> <Name>>
 Param.Param = <<String> <String>>
 
 Ctor.Ctor = <.method assembly specialname rtspecialname instance default void '.ctor' (<{Param ","}*>)  cil managed
-			  {
-			      .maxstack 1024
-			      <{Instruction "\n"}*>
-			      ret
-			  }>
+{
+  .maxstack 1024
+  <{Instruction "\n"}*>
+  ret
+}>
 Ctor.DefaultCtor = <.method assembly specialname rtspecialname instance default void '.ctor' ()  cil managed
-			  {
-			      .maxstack 4
-			      ret
-			  }>
+{
+  .maxstack 4
+  ret
+}>
 
 Instruction.LoadArg = <ldarg.<Int>>
 Instruction.StoreField = <stfld <Type> Test1/<Name>::<Name>>
