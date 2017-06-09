@@ -147,13 +147,14 @@ rules
 	curriedFunction-to-cil: (funTy, ty@Function(x,y), name, processedArgs, nextArgs@[argHd | argTl], freeVars) -> result with
 		funcName 	 := <concat-strings> [name, "_", <length;int-to-string>processedArgs];
 		baseClass 	 := <type-to-cil> ty;
-		all_fields   := <concat> [processedArgs, freeVars];
-		fields 		 := <map(generateField)> all_fields;
+		argFields    := <map(generateField)> processedArgs;
+		freeVarFields:= <map(generateField; \Field(a,b) -> Field(a, <getFreeVarName> b)\)> freeVars;
+		allFields    := <concat> [argFields, freeVarFields];
 		ctor 		 := <generateConstructor> (funcName, processedArgs, baseClass, freeVars);
 		retTy 		 := <type-to-cil> y;
 		instructions := <generateInvokeImplementation> (funTy, name, processedArgs, nextArgs, freeVars);
 		genericVars  := <getOptionalGenericVars> funTy;
-		function     := FunctionDefinition(funcName, genericVars, baseClass, fields, ctor, retTy, instructions);
+		function     := FunctionDefinition(funcName, genericVars, baseClass, allFields, ctor, retTy, instructions);
 		nextFunction := <curriedFunction-to-cil> (funTy, y, name, <concat> [processedArgs, [argHd]], argTl, freeVars);
 		result 		 := <concat> [[function], nextFunction] 
 		
@@ -163,9 +164,11 @@ rules
 		result := [LoadArg("0"), LoadField(fldType, className, identifierName)] 
 	loadArgs: (processed, funTy, className) -> <mapconcat(\x -> <loadArg> (processed, funTy, className, <getIdentifierName> x)\)> processed
 
+	getFreeVarName: x -> <concat-strings> ["freevar_", x]
+
 	loadFreeVar: (className, freeVar) -> result with
 		ty        := <nabl2-get-ast-type; type-to-cil> freeVar;
-		fieldName := <getIdentifierName> freeVar;
+		fieldName := <getIdentifierName;getFreeVarName> freeVar;
 		result    := [LoadArg("0"), LoadField(ty, className, fieldName)]
 	loadFreeVars: (className, freeVars) -> result with
 		result := <mapconcat(\x -> (className, x)\; loadFreeVar)> freeVars
@@ -209,14 +212,13 @@ rules
 		]
 
 	generateBaseInit: baseType -> <concat>[[LoadArg("0")], [CallConstructor(baseType)]]
-	generateConstructorParamCopy: x -> []
 	generateParam: x -> result with
 		ty     := <nabl2-get-ast-type;strip-forall;type-to-cil> x;
 		name   := <getIdentifierName> x;
 		result := Param(ty, name)
 	generateConstructor: (className, params, baseType, freeVars) -> result with 
 		curried_params := <map(generateParam)> params;
-		freeVar_params := <map(generateParam)> freeVars;
+		freeVar_params := <map(generateParam; \Param(ty,name) -> Param(ty, <getFreeVarName>name)\)> freeVars;
 		all_params     := <concat> [curried_params, freeVar_params];
 		body 		   := <concat> 
 		[
