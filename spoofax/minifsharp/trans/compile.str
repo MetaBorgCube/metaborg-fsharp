@@ -174,7 +174,7 @@ rules
 	getCurrentArgs: (processed, [hd|tl]) -> <concat> [processed, [hd]]
 	
 	generateInvokeImplementation: (funTy, className, processed, nextArgs, freeVars) -> result with
-		objName         := <concat-strings;debugq> [className, "_", <length;int-to-string> processed];
+		objName         := <concat-strings> [className, "_", <length;int-to-string> processed];
 		loadCurriedArgs := <loadArgs> (processed, funTy, objName);
 		loadFreeVars    := <loadFreeVars> (<concat-strings> [className, "_", <length;int-to-string> processed], freeVars);
 		argTys          := <getCurrentArgs;map(nabl2-get-ast-type;type-to-cil)> (processed, nextArgs);       // Note: does not work for generics
@@ -244,8 +244,21 @@ rules
 		result := <concat> [<getFreeVars> (scope, exp), <getFreeVars> (<concat> [scope, args], tail)]
 	getFreeVars: (scope, BinaryOperation(op, a, b)) -> <concat> [<getFreeVars> (scope, a), <getFreeVars> (scope, b)]
 	getFreeVars: (scope, Const(_)) -> []
-	getFreeVars: (scope, x@Identifier(_)) -> <getFreeVar> (scope, x)
+	
+	
+	getFreeVars: (scope, x@Identifier(_), None()) -> <getFreeVar> (scope, x)
+	getFreeVars: (scope, x@Identifier(_), Some(func@Let(_,_,_,_))) -> <getFreeVars> (scope, func)
+	getFreeVars: (scope, x@Identifier(name)) -> result with 
+		node       := <nabl2-get-ast-analysis> name;
+		ref-occ    := <nabl2-mk-occurrence(|"Funcs")> name;
+		dec-occ    := <nabl2-get-resolved-name(|node); Fst> ref-occ;
+		targetFunc := <nabl2-get-type(|node)> dec-occ;
+		result     := <getFreeVars> (scope, x, targetFunc)
+		
+		
 	getFreeVars: (scope, Application(a,b)) -> <concat> [<getFreeVars> (scope, a), <getFreeVars> (scope, b)]
+	
+	
 	getFreeVars: (scope, Let(name,args,retTy,body)) -> result with
 		newscope := <concat> [args, scope];
 		result   := <getFreeVars> (newscope, body)
@@ -261,15 +274,25 @@ rules
 	indexOf: ([]        , var, idx) -> -1
 	indexOf: ([var | tl], var, idx) -> idx
 	indexOf: ([_   | tl], var, idx) -> <indexOf> (tl, var, <add> (idx, 1))
+	
+	getOrigin: Identifier(var_name) -> result with 
+		node    := <nabl2-get-ast-analysis> var_name;
+		ref-occ := <nabl2-mk-occurrence(|"Const")> var_name;
+		dec-occ := <nabl2-get-resolved-name(|node);Fst> ref-occ;
+		result  := <nabl2-get-property(|node, "origin")> dec-occ
+	
+	// gets origin if it is an identifier, otherwise returns the identity
+	getWeakOrigin: a@Identifier(_) -> <getOrigin> a
+	getWeakOrigin: x -> x
+	
 	// returns the index of var in the list vars, or -1 if not present. Uses only the name in the identifier.
 	getIdentifierIndex: (vars, var) -> result with
-		var_names := <map(getIdentifierName;strip-annos)> vars;
-		var_name  := <getIdentifierName;strip-annos> var;
-		result 	  := <indexOf> (var_names, var_name, 0)
+		varOrigins := <map(getWeakOrigin)> vars;
+		varOrigin  := <getOrigin> var;
+		result 	:= <indexOf> (varOrigins, varOrigin, 0)
 		
 	getFreeVar: (vars, var) -> result with 
-		var_names := <map(getIdentifierName)> vars;
-		var_name := <getIdentifierName> var;
-		if <strip-annos;elem> (var_name, var_names) then result := [] else result := [var] end
+		varOrigin := <getOrigin> var;
+		if <elem> (varOrigin, vars) then result := [] else result := [var] end
  
 		
