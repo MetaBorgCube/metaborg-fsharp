@@ -82,16 +82,14 @@ rules
 	strip-forall: Forall(x,y) -> y
 	strip-forall: x -> x
 	
-	getCurriedType: (retTy, []) -> "int32"
- 	getCurriedType: (retTy, [argTyHd | argTyTl]) -> <concat-strings> ["class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2<int32,", <getCurriedType> (retTy, argTyTl), ">"]
- 
- 
 // Misc cil-generation
 
 	program-to-cil: (ExprBlock(exp, None()), func) -> <program-to-cil> (exp, func)
 	program-to-cil: (ExprBlock(exp, Some(next)), func) -> <concat> [<program-to-cil> (exp, func), <program-to-cil> (next, func)]
 	
 	program-to-cil: (Const(Integer(x)), func) -> [Ldc(x)]
+	program-to-cil: (Const(Bool(True())), func) -> [Ldc("1")]
+	program-to-cil: (Const(Bool(False())), func) -> [Ldc("0")]
 	
 	program-to-cil: (BinaryOperation(op, a, b), func) -> <concat> [<program-to-cil> (a, func), <program-to-cil> (b, func), <binop-to-cil> op]
 	binop-to-cil: PlusOp() -> [Add()]
@@ -102,11 +100,24 @@ rules
 		
 	program-to-cil: (Let(_,_,_,_), func) -> [] // functions are compiled elsewhere; don't try to compile them into other function bodies
 		
-		
-		
-		
-		
-		
+	
+	
+// Match
+
+	program-to-cil: (Match(e, matches), func) -> result with
+		endOfMatch := <newname>;
+		ty := <nabl2-get-ast-type> e;
+		a := <program-to-cil> (e, func);	
+		b := <mapconcat(\x -> <match-to-cil> (ty, x, endOfMatch, func)\)> matches;
+		result := <concat> [a, b, [Label(endOfMatch)]]
+	
+	match-to-cil: (Bool(), a, b, c) -> <match-to-cil> (Int(), a, b, c)
+	match-to-cil: (Int(), Rule(lhs, rhs), endOfMatch, func) -> result with
+		endOfRule := <newname>;
+		a := <program-to-cil> (lhs, func);
+		b := <program-to-cil; debug9> (rhs, func);
+		result := <concat> [[Dup()], a, [Bne(LabelRef(endOfRule)), Pop()], b, [Br(LabelRef(endOfMatch)),Label(endOfRule)]]
+
 		
 		
 	getLetArgs: Let   (_, args, _, _) -> args
@@ -152,9 +163,10 @@ rules
 		allFields    := <concat> [argFields, freeVarFields];
 		ctor 		 := <generateConstructor> (funcName, processedArgs, baseClass, freeVars);
 		retTy 		 := <type-to-cil> y;
+		argTy        := <type-to-cil> x;
 		instructions := <generateInvokeImplementation> (funTy, name, processedArgs, nextArgs, freeVars);
 		genericVars  := <getOptionalGenericVars> funTy;
-		function     := FunctionDefinition(funcName, genericVars, baseClass, allFields, ctor, retTy, instructions);
+		function     := FunctionDefinition(funcName, genericVars, baseClass, allFields, ctor, retTy, argTy, instructions);
 		nextFunction := <curriedFunction-to-cil> (funTy, y, name, <concat> [processedArgs, [argHd]], argTl, freeVars);
 		result 		 := <concat> [[function], nextFunction] 
 		
@@ -247,7 +259,6 @@ rules
 	getFreeVars: (scope, BinaryOperation(op, a, b)) -> <concat> [<getFreeVars> (scope, a), <getFreeVars> (scope, b)]
 	getFreeVars: (scope, Const(_)) -> []
 	
-	
 	getFreeVars: (scope, x@Identifier(_), None()) -> <getFreeVar> (scope, x)
 	getFreeVars: (scope, x@Identifier(_), Some(func@Let(_,_,_,_))) -> <getFreeVars> (scope, func)
 	getFreeVars: (scope, x@Identifier(name)) -> result with 
@@ -265,6 +276,8 @@ rules
 		newscope := <concat> [args, scope];
 		result   := <getFreeVars> (newscope, body)
 	
+	getFreeVars: (scope, Match(_,_)) -> [] // TODO
+
 	getExprBlockArgs: (scope, l@Let(_, _, _, _)) -> [l]
 	getExprBlockArgs: (scope, l@LetRec(_, _, _, _)) -> [l]
 	getExprBlockArgs: (scope, l@LetConst(_, _, _)) -> [l]
