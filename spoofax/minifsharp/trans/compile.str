@@ -92,15 +92,18 @@ rules
 	program-to-cil: (Const(Bool(False())), func) -> [Ldc("0")]
 	
 	program-to-cil: (BinaryOperation(op, a, b), func) -> <concat> [<program-to-cil> (a, func), <program-to-cil> (b, func), <binop-to-cil> op]
-	binop-to-cil: PlusOp() -> [Add()]
-	binop-to-cil: MinOp()  -> [Sub()]
-	binop-to-cil: MultOp() -> [Mul()]	
+	binop-to-cil: PlusOp()    -> [Add()]
+	binop-to-cil: MinOp()     -> [Sub()]
+	binop-to-cil: MultOp()    -> [Mul()]
+	binop-to-cil: EqualOp()   -> [Ceq()]
+	binop-to-cil: SmallerOp() -> [Clt()]	
+	binop-to-cil: OrOp()      -> [Or()]  // Note: bitwise or.  Should be OK since bools are always 0 or 1
+	binop-to-cil: AndOp()     -> [And()] // Note: bitwise and. Should be OK since bools are always 0 or 1	
 	
 	program-to-cil: (v@Identifier(name), func) -> [LoadArg(<getArg;int-to-string> (v,func))]
 		
 	program-to-cil: (Let(_,_,_,_), func) -> [] // functions are compiled elsewhere; don't try to compile them into other function bodies
 		
-	
 	
 // Match
 

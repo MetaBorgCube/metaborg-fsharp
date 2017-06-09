@@ -25,7 +25,6 @@ constructors
 	OrOp						: BinaryOperand
 	EqualOp						: BinaryOperand
 	SmallerOp					: BinaryOperand
-	SmallerEqualOp				: BinaryOperand
 
 	// Unary Operations
 
@@ -54,8 +53,8 @@ rules
 	desugar: NotEqual(a, b)				-> UnaryOperation(NotOp(), BinaryOperation(OrOp(), a, b))
 	desugar: Smaller(a, b)				-> BinaryOperation(SmallerOp(), a, b)
 	desugar: Greater(a, b)				-> BinaryOperation(SmallerOp(), b, a)
-	desugar: SmallerEqual(a, b)			-> BinaryOperation(SmallerEqualOp(), a, b)
-	desugar: GreaterEqual(a, b)			-> BinaryOperation(SmallerEqualOp(), b, a)
+	desugar: SmallerEqual(a, b)			-> BinaryOperation(OrOp(), BinaryOperation(SmallerOp(), a, b), BinaryOperation(EqualOp(), a, b))
+	desugar: GreaterEqual(a, b)			-> BinaryOperation(OrOp(), BinaryOperation(SmallerOp(), b, a), BinaryOperation(EqualOp(), a, b))
 	
 	// If Expressions
 

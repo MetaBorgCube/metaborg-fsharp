@@ -137,7 +137,10 @@ Instruction.Neg = <neg>
 Instruction.Ret = <ret>
 Instruction.Pop = <pop>
 Instruction.Dup = <dup>
-
+Instruction.And = <and>
+Instruction.Or = <or>
+Instruction.Ceq = <ceq>
+Instruction.Clt = <clt>
 Instruction.Br = <br <LabelRef>>
 Instruction.Bne = <bne.un <LabelRef>>
 Instruction.BrFalse = <brfalse <LabelRef>>
