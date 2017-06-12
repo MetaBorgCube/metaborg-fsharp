@@ -85,14 +85,15 @@ rules
 		Funcs{id} <- s,
 		Funcs{id} : Some(a).
 	   
-  	[[ LetRec(id, args, retTy, body) ^ (s) : argCurried2 ]] := 
-		GetSpecifiedRetTy [[ retId ^ (s) : retTyp ]],
+  	[[ a@LetRec(id, args, retId, body) ^ (s) : argCurried2 ]] := 
+    	GetSpecifiedRetTy [[ retId ^ (s) : retTyp ]],
 		MapCurry [[ args ^ (s_body, retTyp) : argCurried ]],
 		argCurried2 genOf(vars) argCurried,
 		new s_body, 
 		s_body -P-> s,
 		Const{id} <- s,
-		Const{id} <- s_body,
+		Funcs{id} <- s,
+		Funcs{id} : Some(a),
 		Const{id} : argCurried2,
 	    InnerExprBlock[[ body ^ (s_body) : retTyp]].
     
