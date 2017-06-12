@@ -104,7 +104,7 @@ rules
 		
 	program-to-cil: (Let(_,_,_,_,_), func) -> [] // functions are compiled elsewhere; don't try to compile them into other function bodies
 		
-	
+		
 // Match
 
 	program-to-cil: (Match(e, matches), func) -> result with
@@ -114,7 +114,10 @@ rules
 		b := <mapconcat(\x -> <match-to-cil> (ty, x, endOfMatch, func)\)> matches;
 		result := <concat> [a, b, [Label(endOfMatch)]]
 	
-	match-to-cil: (Bool(), a, b, c) -> <match-to-cil> (Int(), a, b, c)
+	match-to-cil: (Bool(), a, b, c) -> <match-to-cil> (Int(), a, b, c) // bool is handled the same as ints
+	match-to-cil: (Int(), Rule(Wildcard(), rhs), endOfMatch, func) -> result with
+		b := <program-to-cil> (rhs, func);
+		result := <concat> [[Pop()], b, [Br(LabelRef(endOfMatch))]]
 	match-to-cil: (Int(), Rule(lhs, rhs), endOfMatch, func) -> result with
 		endOfRule := <newname>;
 		a := <program-to-cil> (lhs, func);
