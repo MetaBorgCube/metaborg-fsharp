@@ -73,7 +73,7 @@ rules
 
 	// Let Rules
 
-  	[[ a@Let(id, args, retId, body) ^ (s) : argCurried2 ]] := 
+  	[[ a@Let(NonRecursive(), id, args, retId, body) ^ (s) : argCurried2 ]] := 
 		GetSpecifiedRetTy [[ retId ^ (s) : retTyp ]],
 		new s_body, 
 		s_body -P-> s,
@@ -84,8 +84,8 @@ rules
 		Const{id} : argCurried2,
 		Funcs{id} <- s,
 		Funcs{id} : Some(a).
-	   
-  	[[ a@LetRec(id, args, retId, body) ^ (s) : argCurried2 ]] := 
+	  
+  	[[ a@Let(Recursive(), id, args, retId, body) ^ (s) : argCurried2 ]] := 
     	GetSpecifiedRetTy [[ retId ^ (s) : retTyp ]],
 		MapCurry [[ args ^ (s_body, retTyp) : argCurried ]],
 		argCurried2 genOf(vars) argCurried,

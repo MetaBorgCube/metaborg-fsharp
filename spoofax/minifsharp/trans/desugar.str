@@ -75,8 +75,7 @@ rules
 	// Let Expressions
 	
 	desugar: LetExp(a @ LetConst(_, _, _))	-> a
-	desugar: LetExp(a @ LetRec(_, _, _, _))	-> a
-	desugar: LetExp(a @ Let(_, _, _, _))	-> a
+	desugar: LetExp(a @ Let(_, _, _, _, _))	-> a
 	
 	// Tuple
 

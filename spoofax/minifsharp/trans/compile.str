@@ -20,7 +20,7 @@ rules
 	      a         := <nabl2-get-ast-analysis> ast;
 		result := <desugar-all; program-to-cil; pp-debug> ast
 
-	program-to-cil: Program(e,l@Let(a,b,c,d)) -> ProgramCil(<concat> [[Method("int32", a, None(), [], <program-to-cil> (d, l))], <nonEntryPoints-to-cil> e], a)
+	program-to-cil: Program(e,l@Let(_,a,b,c,d)) -> ProgramCil(<concat> [[Method("int32", a, None(), [], <program-to-cil> (d, l))], <nonEntryPoints-to-cil> e], a)
 		
 	nonEntryPoints-to-cil: None() -> []
 	nonEntryPoints-to-cil: Some(x) -> <listifyExprBlock; map(let-to-cil); concat> x
@@ -102,7 +102,7 @@ rules
 	
 	program-to-cil: (v@Identifier(name), func) -> [LoadArg(<getArg;int-to-string> (v,func))]
 		
-	program-to-cil: (Let(_,_,_,_), func) -> [] // functions are compiled elsewhere; don't try to compile them into other function bodies
+	program-to-cil: (Let(_,_,_,_,_), func) -> [] // functions are compiled elsewhere; don't try to compile them into other function bodies
 		
 	
 // Match
@@ -123,8 +123,7 @@ rules
 
 		
 		
-	getLetArgs: Let   (_, args, _, _) -> args
-	getLetArgs: LetRec(_, args, _, _) -> args
+	getLetArgs: Let   (_,_, args, _, _) -> args
 
 	// returns index of the identifier in the sequence [param1, ..., paramn, freeVar1, ..., freeVarn] 
 	getArg: (identifier, func) -> result with
@@ -134,7 +133,7 @@ rules
 		numParams  := <getLetArgs;length> func;
 		if <lt> (freeVarIdx, 0) then result := paramIndex else  result := <add> (numParams, freeVarIdx) end
 
-	let-to-cil: a @ Let(name,args,retTy,body) -> result with 
+	let-to-cil: a @ Let(recursiveType, name,args,retTy,body) -> result with 
 		tmp 	   	 := <nabl2-get-ast-type; strip-forall> a;
 		returnType 	 := <ret-type-to-cil> tmp;
 		argTypes 	 := <map(\x -> <arg-type-to-cil> (tmp, <getIdentifierName> x, args)\)> args;
@@ -152,8 +151,7 @@ rules
 	getIdentifierName: ArgIdentifier(x) -> x
 	getIdentifierName: TypedArgIdentifier(x, _) -> x
 	getIdentifierName: Identifier(x) -> x
-	getIdentifierName: Let(name, _, _, _)    -> name // required for getExprBlockArgs (bit of a dirty hack..)
-	getIdentifierName: LetRec(name, _, _, _) -> name // required for getExprBlockArgs
+	getIdentifierName: Let(_, name, _, _, _)    -> name // required for getExprBlockArgs (bit of a dirty hack..)
 	getIdentifierName: LetConst(name, _, _)  -> name // required for getExprBlockArgs
 	
 	
@@ -263,7 +261,7 @@ rules
 	getFreeVars: (scope, Const(_)) -> []
 	
 	getFreeVars: (scope, x@Identifier(_), None()) -> <getFreeVar> (scope, x)
-	getFreeVars: (scope, x@Identifier(_), Some(func@Let(_,_,_,_))) -> <getFreeVars> (scope, func)
+	getFreeVars: (scope, x@Identifier(_), Some(func@Let(_,_,_,_,_))) -> <getFreeVars> (scope, func)
 	getFreeVars: (scope, x@Identifier(name)) -> result with 
 		node       := <nabl2-get-ast-analysis> name;
 		ref-occ    := <nabl2-mk-occurrence(|"Funcs")> name;
@@ -275,14 +273,13 @@ rules
 	getFreeVars: (scope, Application(a,b)) -> <concat> [<getFreeVars> (scope, a), <getFreeVars> (scope, b)]
 	
 	
-	getFreeVars: (scope, Let(name,args,retTy,body)) -> result with
+	getFreeVars: (scope, Let(_,name,args,retTy,body)) -> result with
 		newscope := <concat> [args, scope];
 		result   := <getFreeVars> (newscope, body)
 	
 	getFreeVars: (scope, Match(_,_)) -> [] // TODO
 
-	getExprBlockArgs: (scope, l@Let(_, _, _, _)) -> [l]
-	getExprBlockArgs: (scope, l@LetRec(_, _, _, _)) -> [l]
+	getExprBlockArgs: (scope, l@Let(_,_, _, _, _)) -> [l]
 	getExprBlockArgs: (scope, l@LetConst(_, _, _)) -> [l]
 	getExprBlockArgs: (scope, _) -> []
 	
