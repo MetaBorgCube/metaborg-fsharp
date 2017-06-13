@@ -11,9 +11,27 @@ imports
   trans/minifsharp
   src-gen/nabl2/static-semantics
   
+strategies
+	
+	external strategy-generate-cil(|path)
+	external strategy-run-cil(|path)
 
+signature constructors
+	
+	Output: String * String -> Term
+	
 rules
 
+	
+	generate-cil: (selected, position, ast, path, project-path) -> (filename, result) with
+		filename 	:= <guarantee-extension(|"result.log")> path;
+		(cname, _) 	:= <show-cil> (selected, position, ast, path, project-path);
+		result		:= <strategy-generate-cil(|path); process-output> cname
+		
+	run-cil: (selected, position, ast, path, project-path) -> (filename, result) with
+		filename 	:= <guarantee-extension(|"result.txt")> path;
+		(cname, _) 	:= <show-cil> (selected, position, ast, path, project-path);
+		result		:= <strategy-run-cil(|path); process-output> cname
 	
 	show-cil: (selected, _, ast, path, project-path) -> (filename, result) with
 	    filename := <guarantee-extension(|$[cil])> path;
@@ -25,7 +43,10 @@ rules
 	nonEntryPoints-to-cil: None() -> []
 	nonEntryPoints-to-cil: Some(x) -> <listifyExprBlock; map(let-to-cil); concat> x
 	
-	
+	process-output: Output(result, "") -> result
+
+	process-output: Output(result, error) -> $[[result] Runtime error: [error]]
+		where not (<""> error)
 	
 // Application	
 	
