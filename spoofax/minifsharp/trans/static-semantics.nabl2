@@ -99,10 +99,12 @@ rules
     
   	[[ LetConst(id, retTy, body) ^ (s) : ty ]] := 
 		GetSpecifiedRetTy [[ retTy ^ (s) : ty ]],
-		Const{id} <- s,
-		Const{id} : ty,
 		new s_body, 
 		s_body -P-> s,
+		Const{id} <- s,
+		Const{id} : ty,
+		Funcs{id} <- s,
+		Funcs{id} : None(),
 	    InnerExprBlock[[ body ^ (s_body) : ty]].
     
     // Match Rules
