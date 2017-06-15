@@ -114,34 +114,46 @@ rules
     	Map2UT [[ rules ^ (s, idType) : ty ]].
     	
     [[ Rule(pattern, body) ^ (s, idType) : ty ]] :=
-    	[[ pattern ^ (s) : idType ]],
-    	[[ body ^ (s) : ty ]].
+		new s_body, 
+		s_body -P-> s,
+    	Pattern [[ pattern ^ (s_body) : idType ]],
+    	[[ body ^ (s_body) : ty ]].
     	
     // Pattern Rules
     
-    [[ Wildcard() ^ (s) : ty ]].
+    Pattern [[ Wildcard() ^ (s) : ty ]].
     
-    [[ PatternOr(p1, p2) ^ (s) : ty ]] :=
-    	[[ p1 ^ (s) : ty ]],
-    	[[ p2 ^ (s) : ty ]].
+    Pattern [[ PatternOr(p1, p2) ^ (s) : ty ]] :=
+    	Pattern [[ p1 ^ (s) : ty ]],
+    	Pattern [[ p2 ^ (s) : ty ]].
     	
-    [[ PatternList(p) ^ (s) : List(ty) ]] :=
-    	Map1UT [[ p ^ (s) : ty ]].
+    Pattern [[ PatternList(p) ^ (s) : List(ty) ]] :=
+    	Map1UT(Pattern) [[ p ^ (s) : ty ]].
     	
-    [[ PatternConcat(p, plist) ^ (s) : List(ty) ]] :=
-    	[[ p1 ^ (s) : ty ]],
-    	[[ p2 ^ (s) : ty ]].
+    Pattern [[ PatternConcat(p, plist) ^ (s) : List(ty) ]] :=
+    	Pattern [[ p1 ^ (s) : ty ]],
+    	Pattern [[ p2 ^ (s) : ty ]].
     	
-	[[ PatternTuple(plist) ^ (s) : Tuple(ty) ]] :=
-		Map1T [[ plist ^ (s) : ty]].
+	Pattern [[ PatternTuple(plist) ^ (s) : Tuple(ty) ]] :=
+		Map1T(Pattern) [[ plist ^ (s) : ty]].
 		
-	[[ TypeConstruct(id, arg) ^ (s) : funcRetTy ]] :=
+	Pattern [[ TypeConstruct(id, arg) ^ (s) : funcRetTy ]] :=
 		Const{id} -> s, 
 	  	Const{id} |-> d,
 	  	d : constructTy,
 	    ty2 instOf ty,
-	    [[ arg ^ (s) : argTy ]],
+	    Pattern [[ arg ^ (s) : argTy ]],
 	    ty2 == Function(argTy, funcRetTy).
+	    
+	Pattern [[ a@Const(_) ^ (s) : ty]] :=		[[ a ^ (s) : ty]].
+  	Pattern [[ a@Integer(_) ^ (s) : Int()]] :=	[[ a ^ (s) : ty]].
+   	Pattern [[ a@Bool(_) ^ (s) : Bool() ]] :=	[[ a ^ (s) : ty]].
+	
+  	Pattern [[ Identifier(id) ^ (s) : ty]] :=
+		Const{id} <- s,
+		Funcs{id} <- s,
+		Const{id} : ty,
+		Funcs{id} : None().
     
     // Union types
     
@@ -166,17 +178,11 @@ rules
 		[[ def ^ (s) : ty ]],
 		Const{id} <- s,
 		Const{id} : ty.
-    	
-    [[ SingleType(t) ^ (s) : ty ]] :=
-		[[ t ^ (s) : ty ]].
-    	
+    [[ SingleType(t) ^ (s) : ty ]] := [[ t ^ (s) : ty ]].
     [[ IntegerType() ^ (s) : Int() ]].
     [[ BooleanType() ^ (s) : Bool() ]].
-    [[ ListType(t) ^ (s) : List(ty) ]] :=
-    	[[ t ^ (s) : ty ]].
-        	
-	[[ TypeTuple(plist) ^ (s) : Tuple(ty) ]] :=
-		Map1T [[ plist ^ (s) : ty]].
+    [[ ListType(t) ^ (s) : List(ty) ]] := [[ t ^ (s) : ty ]].
+	[[ TypeTuple(plist) ^ (s) : Tuple(ty) ]] := Map1T [[ plist ^ (s) : ty]].
 		
   	// Function return types
    
@@ -186,7 +192,7 @@ rules
 
 	// Expressions and Values
 	
-  	[[ a@Identifier(id) ^ (s) : ty]] :=
+  	[[ Identifier(id) ^ (s) : ty]] :=
 	  	Const{id} -> s, 
 	  	Const{id} |-> d,
 	  	Funcs{id} -> s,
@@ -213,11 +219,15 @@ rules
 	  	Const{id} : ty,
 	  	Const{id}.origin := a.
   		
-  	[[ Const(v) ^ (s) : ty]] :=
-    	[[ v ^ (s) : ty]].
-  
+  	[[ Const(v) ^ (s) : ty]] := [[ v ^ (s) : ty]].
   	[[ Integer(x) ^ (s) : Int()]].
    	[[ Bool(x) ^ (s) : Bool() ]].
+	
+	[[ Print(x) ^ (s) : Unit() ]] := [[ x ^ (s) : type ]].
+		
+	[[ List(x) ^ (s) : List(ty) ]] := Map1UT [[ x ^ (s) : ty ]].
+        	
+	[[ ExpTuple(plist) ^ (s) : Tuple(ty) ]] := Map1T [[ plist ^ (s) : ty]].
    
 	[[ BinaryOperation(PlusOp(), 		a,b) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
 	[[ BinaryOperation(MinOp() , 		a,b) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
@@ -228,14 +238,8 @@ rules
 	[[ BinaryOperation(OrOp(),   		a,b) ^ (s) : Bool() ]] 		:= [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
 	[[ BinaryOperation(ConcatOp(), 		a,b) ^ (s) : List(ty) ]] 	:= [[ a ^ (s) : ty ]], 	   [[ b ^ (s) : List(ty) ]].
 	
-	[[ Print(x) ^ (s) : Unit() ]] :=
-		[[ x ^ (s) : type ]].
-		
-	[[ List(x) ^ (s) : List(ty) ]] :=
-		Map1UT [[ x ^ (s) : ty ]].
-        	
-	[[ ExpTuple(plist) ^ (s) : Tuple(ty) ]] :=
-		Map1T [[ plist ^ (s) : ty]].
+	[[ UnaryOperation(NotOp(),   		a) ^ (s) : Bool() ]] 		:= [[ a ^ (s) : Bool() ]].
+	[[ UnaryOperation(NegativeOp(), 	a) ^ (s) : Int() ]] 		:= [[ a ^ (s) : Int() ]].
 
 	// Application type
 
