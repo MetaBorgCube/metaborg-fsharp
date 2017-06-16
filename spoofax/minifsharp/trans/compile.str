@@ -4,6 +4,7 @@ imports
 
   libstratego-gpp
   libspoofax/stratego/debug
+  libstratego-lib
   src-gen/signatures/-
   nabl2/api
   trans/pp
@@ -38,7 +39,9 @@ rules
 	      a         := <nabl2-get-ast-analysis> ast;
 		result := <desugar-all; program-to-cil; pp-debug> ast
 
-	program-to-cil: Program(e,l@Let(_,a,b,c,d)) -> ProgramCil(<concat> [[Method("int32", a, None(), [], <program-to-cil> (d, l))], <nonEntryPoints-to-cil> e], a)
+	program-to-cil: Program(e,l@Let(_,a,b,c,d)) -> result with
+		wildcardVars := <getNamedWildcars;map(nabl2-get-ast-type; strip-forall; type-to-cil)> d; 
+		result := ProgramCil(<concat> [[Method("int32", a, None(), [], LocalDefs(wildcardVars), <program-to-cil> (d, (l, [])))], <nonEntryPoints-to-cil> e], a)
 		
 	nonEntryPoints-to-cil: None() -> []
 	nonEntryPoints-to-cil: Some(x) -> <listifyExprBlock; map(let-to-cil); concat> x
@@ -51,7 +54,7 @@ rules
 // Application	
 	
 	// first application: a is an identifier, hence need to call constructor with free vars as parameters
-	program-to-cil: (z@Application(a@Identifier(name),b), func) -> result with
+	program-to-cil: (z@Application(a@Identifier(name),b), context) -> result with
 		funTy := <nabl2-get-ast-type;strip-forall> a;
 		node         := <nabl2-get-ast-analysis> name;
 		ref-occ      := <nabl2-mk-occurrence(|"Funcs")> name;
@@ -59,9 +62,9 @@ rules
 		targetFunc   := <nabl2-get-type(|node)> dec-occ;
 		freeVars     := <getFreeVars> ([], targetFunc);
 		freeVarTys   := <map(nabl2-get-ast-type)> freeVars;
-		loadFreeVars := <mapconcat(\x->(x, func)\;program-to-cil)> freeVars;
+		loadFreeVars := <mapconcat(\x->(x, context)\;program-to-cil)> freeVars;
 		callCtor     := [NewObj(<concat-strings> [name, "_0"], <map(type-to-cil)> freeVarTys)];
-		loadArg      := <program-to-cil> (b, func);
+		loadArg      := <program-to-cil> (b, context);
 		invokeFunc   := [CallVirt(<type-to-cil> funTy)];
 		result       :=  <concat> [
 			loadFreeVars, 
@@ -71,9 +74,9 @@ rules
 		]
 	
 	// not the first application: a is not an identifier, hence no need to call constructor with free vars as parameters
-	program-to-cil: (z@Application(a,b), func) -> result with
+	program-to-cil: (z@Application(a,b), context) -> result with
 		funTy := <nabl2-get-ast-type;strip-forall> a;
-		result :=  <concat> [<program-to-cil> (a, func), <program-to-cil> (b, func), [CallVirt(<type-to-cil> funTy)]]
+		result :=  <concat> [<program-to-cil> (a, context), <program-to-cil> (b, context), [CallVirt(<type-to-cil> funTy)]]
 	
 
 // Type related stuff	
@@ -105,14 +108,14 @@ rules
 	
 // Misc cil-generation
 
-	program-to-cil: (ExprBlock(exp, None()), func) -> <program-to-cil> (exp, func)
-	program-to-cil: (ExprBlock(exp, Some(next)), func) -> <concat> [<program-to-cil> (exp, func), <program-to-cil> (next, func)]
+	program-to-cil: (ExprBlock(exp, None()), context) -> <program-to-cil> (exp, context)
+	program-to-cil: (ExprBlock(exp, Some(next)), context) -> <concat> [<program-to-cil> (exp, context), <program-to-cil> (next, context)]
 	
-	program-to-cil: (Const(Integer(x)), func) -> [Ldc(x)]
-	program-to-cil: (Const(Bool(True())), func) -> [Ldc("1")]
-	program-to-cil: (Const(Bool(False())), func) -> [Ldc("0")]
+	program-to-cil: (Const(Integer(x)), context) -> [Ldc(x)]
+	program-to-cil: (Const(Bool(True())), context) -> [Ldc("1")]
+	program-to-cil: (Const(Bool(False())), context) -> [Ldc("0")]
 	
-	program-to-cil: (BinaryOperation(op, a, b), func) -> <concat> [<program-to-cil> (a, func), <program-to-cil> (b, func), <binop-to-cil> op]
+	program-to-cil: (BinaryOperation(op, a, b), context) -> <concat> [<program-to-cil> (a, context), <program-to-cil> (b, context), <binop-to-cil> op]
 	binop-to-cil: PlusOp()    -> [Add()]
 	binop-to-cil: MinOp()     -> [Sub()]
 	binop-to-cil: MultOp()    -> [Mul()]
@@ -121,34 +124,56 @@ rules
 	binop-to-cil: OrOp()      -> [Or()]  // Note: bitwise or.  Should be OK since bools are always 0 or 1
 	binop-to-cil: AndOp()     -> [And()] // Note: bitwise and. Should be OK since bools are always 0 or 1	
 	
-	program-to-cil: (v@Identifier(name), func) -> [LoadArg(<getArg;int-to-string> (v,func))]
+	program-to-cil: (v@Identifier(name), context) -> <getVar> (v, context)
 		
-	program-to-cil: (Let(_,_,_,_,_), func) -> [] // functions are compiled elsewhere; don't try to compile them into other function bodies
+	program-to-cil: (Let(_,_,_,_,_), context) -> [] // functions are compiled elsewhere; don't try to compile them into other function bodies
 		
 		
 // Match
-
-	program-to-cil: (Match(e, matches), func) -> result with
+	
+	eq-ast: (a,a) -> [a]
+	eq-ast: (a,b) -> []
+	
+	isNamedWildcard: a@Identifier(x) -> result with
+		result := <eq-ast> (a, <getOrigin> a)
+	getNamedWildcars: x -> < collect-all(?Identifier(_));  mapconcat(isNamedWildcard)> x
+	
+	program-to-cil: (match@Match(e, matches), context@(func, wildcardDefs)) -> result with
+		namedWildcards := <getNamedWildcars> matches;
+		allWildcards := <union> (wildcardDefs, namedWildcards);
 		endOfMatch := <newname>;
 		ty := <nabl2-get-ast-type> e;
-		a := <program-to-cil> (e, func);	
-		b := <mapconcat(\x -> <match-to-cil> (ty, x, endOfMatch, func)\)> matches;
+		a := <program-to-cil> (e, context);	
+		b := <mapconcat(\x -> <match-to-cil> (ty, x, endOfMatch, (func, allWildcards))\)> matches;
 		result := <concat> [a, b, [Label(endOfMatch)]]
 	
 	match-to-cil: (Bool(), a, b, c) -> <match-to-cil> (Int(), a, b, c) // bool is handled the same as ints
-	match-to-cil: (Int(), Rule(Wildcard(), rhs), endOfMatch, func) -> result with
-		b := <program-to-cil> (rhs, func);
+	match-to-cil: (Int(), Rule(Wildcard(), rhs), endOfMatch, context) -> result with
+		b := <program-to-cil> (rhs, context);
 		result := <concat> [[Pop()], b, [Br(LabelRef(endOfMatch))]]
-	match-to-cil: (Int(), Rule(lhs, rhs), endOfMatch, func) -> result with
+	match-to-cil: (Int(), Rule(a@Identifier(_), rhs), endOfMatch, context@(func,wildcards)) -> result with
+		idx := <getIdentifierIndex> (wildcards, a);
+		b := <program-to-cil> (rhs, context);
+		result := <concat> [[StoreLocal(<int-to-string> idx)], b, [Br(LabelRef(endOfMatch))]]
+		
+	match-to-cil: (Int(), Rule(lhs, rhs), endOfMatch, context) -> result with
 		endOfRule := <newname>;
-		a := <program-to-cil> (lhs, func);
-		b := <program-to-cil; debug9> (rhs, func);
+		a := <program-to-cil> (lhs, context);
+		b := <program-to-cil> (rhs, context);
 		result := <concat> [[Dup()], a, [Bne(LabelRef(endOfRule)), Pop()], b, [Br(LabelRef(endOfMatch)),Label(endOfRule)]]
 
 		
 		
 	getLetArgs: Let   (_,_, args, _, _) -> args
 
+
+	getVar: (identifier, (func, wildcardDefs)) -> result with
+		wildcardIdx := <getIdentifierIndex> (wildcardDefs, identifier);
+		if <lt> (wildcardIdx, 0) then 
+			result := [LoadArg(<getArg;int-to-string> (identifier, func))]
+		else 
+			result := [LoadLocal(<int-to-string> wildcardIdx)] 
+		end
 	// returns index of the identifier in the sequence [param1, ..., paramn, freeVar1, ..., freeVarn] 
 	getArg: (identifier, func) -> result with
 		freeVars   := <getFreeVars> ([], func);
@@ -165,7 +190,8 @@ rules
 		freeVars 	 := <getFreeVars> ([], a);
 		freeVarTypes := <map(nabl2-get-ast-type; strip-forall; type-to-cil)> freeVars;
 		allArgTypes  := <concat>  [argTypes, freeVarTypes];
-		method 		 := Method(returnType, name, genericTypes, allArgTypes, <program-to-cil> (body, a));
+		wildcardVars := <getNamedWildcars;map(nabl2-get-ast-type; strip-forall; type-to-cil)> body; 
+		method 		 := Method(returnType, name, genericTypes, allArgTypes, LocalDefs(wildcardVars), <program-to-cil> (body, (a, [])));
 		curriedFunc  := <curriedFunction-to-cil> (tmp, tmp, name, [], args, freeVars);
 		result 	 	 := <concat> [[method], curriedFunc, <listifyExprBlock;mapconcat(let-to-cil)> body]
 	let-to-cil: _ -> []

@@ -79,6 +79,7 @@ Function.Method = <
 {
 	.custom instance void class [mscorlib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::'.ctor'() =  (01 00 00 00 )
 	.maxstack 1024
+	<LocalDefs>
 	<{Instruction "\n"}*>
 	ret
 }
@@ -102,7 +103,9 @@ Function.FunctionDefinition = <
 >
 
 
-
+LocalDefs.LocalDefs = <.locals init (
+	<{Type ","}*>
+)>
 
 Field.Field = <.field  public  <Type> <Name>>
 
@@ -121,6 +124,8 @@ Ctor.DefaultCtor = <.method assembly specialname rtspecialname instance default 
 }>
 
 Instruction.LoadArg = <ldarg.<Int>>
+Instruction.LoadLocal = <ldloc.<Int>>
+Instruction.StoreLocal = <stloc.<Int>>
 Instruction.StoreField = <stfld <Type> Test1/<Name>::<Name>>
 Instruction.LoadField = <ldfld <Type> Test1/<Name>::<Name>>
 
