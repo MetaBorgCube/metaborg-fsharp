@@ -137,15 +137,15 @@ context-free syntax
 
 	// Rules
 
-	Rules.RulesEscaped			= <<RuleFirst> <Rule*>>												{layout(			ge(col(first(2)),col(first(1))))}
-	Rules.Rules					= <<Rule> <Rule*>>													{layout(			ge(col(first(2)),col(first(1))))}
+	Rules.RulesEscaped			= <<RuleFirst> <Rule?>>												{layout(			eq(col(first(2)),col(first(1))))}
+	Rules.Rules					= <<Rule>>											
 
 	RuleFirst.RuleFirst			= <<OuterPattern> -\> <Expression>> 								{layout(and(		ge(col(first(2)),col(first(1))),
 																	 													ge(col(first(3)),col(first(1)))))}
-	Rule.Rule					= <| <OuterPattern> -\> <Expression>> 								{layout(and(and(	ge(col(first(2)),col(first(1))),
-																	 													ge(col(first(3)),col(first(1))))),
-																	 													ge(col(first(4)),col(first(1))))}
-
+	Rule.RawRule				= <| <OuterPattern> -\> <Expression> <Rule?>> 						{layout(and(and(and(ge(col(first(2)),col(first(1))),
+																	 													ge(col(first(3)),col(first(1)))),
+																	 													ge(col(first(4)),col(first(1)))),
+																	 													eq(col(first(5)),col(first(1)))))}
 	// Types
 	
 	TypeDefinition.TypeEscaped	= <<TypedID> | <{TypedID "|"}+>>

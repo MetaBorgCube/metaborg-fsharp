@@ -38,6 +38,10 @@ constructors
 	PatternTuple				: PatternTuple -> Pattern
 	TypeTuple					: TypeTuple -> Type
 	ExpTuple					: ExpTuple -> Expression
+	
+	// Rule
+
+	Rule						: OuterPattern * Expression -> Rule
 
 rules
 
@@ -68,10 +72,13 @@ rules
 
 	// Match Rules
 
-	desugar: Rules(a, b)				-> <concat> [[a], b]
-	desugar: RulesEscaped(a, b)			-> <concat> [[a], b]
+	desugar: Rules(a)				    ->  a
 	desugar: RuleFirst(a, b)			-> Rule(a, b)
-	
+	desugar: RulesEscaped(a, None())	-> [a]
+	desugar: RulesEscaped(a, Some(b))	-> <concat> [[a], b]
+	desugar: RawRule(a,b,None()) 		-> [Rule(a,b)]
+	desugar: RawRule(a,b,Some(c)) 		-> <concat>[[Rule(a,b)], c]
+	 
 	// Let Expressions
 	
 	desugar: LetExp(a @ LetConst(_, _, _))	-> a
