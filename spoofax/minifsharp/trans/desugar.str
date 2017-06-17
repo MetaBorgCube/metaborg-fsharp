@@ -20,7 +20,6 @@ constructors
 	PlusOp						: BinaryOperand
 	MinOp						: BinaryOperand
 	MultOp						: BinaryOperand
-	ConcatOp					: BinaryOperand
 	AndOp						: BinaryOperand
 	OrOp						: BinaryOperand
 	EqualOp						: BinaryOperand
@@ -42,6 +41,10 @@ constructors
 	// Rule
 
 	Rule						: OuterPattern * Expression -> Rule
+	
+	// List
+	
+	EmptyList					: List
 
 rules
 
@@ -50,7 +53,6 @@ rules
 	desugar: Plus(a, b)					-> BinaryOperation(PlusOp(), a, b)
 	desugar: Min(a, b)					-> BinaryOperation(MinOp(), a, b)
 	desugar: Mult(a, b)					-> BinaryOperation(MultOp(), a, b)
-	desugar: Concat(a, b)				-> BinaryOperation(ConcatOp(), a, b)
 	desugar: And(a, b)					-> BinaryOperation(AndOp(), a, b)
 	desugar: Or(a, b)					-> BinaryOperation(OrOp(), a, b)
 	desugar: Equal(a, b)				-> BinaryOperation(EqualOp(), a, b)
@@ -79,6 +81,11 @@ rules
 	desugar: RawRule(a,b,None()) 		-> [Rule(a,b)]
 	desugar: RawRule(a,b,Some(c)) 		-> <concat>[[Rule(a,b)], c]
 	 
+	// List expressions
+	
+	desugar: List([a|b])  				-> Concat(a, b)
+	desugar: List([]) 					-> EmptyList()
+	
 	// Let Expressions
 	
 	desugar: LetExp(a @ LetConst(_, _, _))	-> a

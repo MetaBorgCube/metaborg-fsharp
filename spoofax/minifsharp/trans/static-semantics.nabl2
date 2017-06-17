@@ -231,7 +231,7 @@ rules
 	
 	[[ Print(x) ^ (s) : Unit() ]] := [[ x ^ (s) : type ]].
 		
-	[[ List(x) ^ (s) : List(ty) ]] := Map1UT [[ x ^ (s) : ty ]].
+	[[ EmptyList() ^ (s) : ty ]].
         	
 	[[ ExpTuple(plist) ^ (s) : Tuple(ty) ]] := Map1T [[ plist ^ (s) : ty]].
    
@@ -242,7 +242,7 @@ rules
 	[[ BinaryOperation(SmallerOp(), 	a,b) ^ (s) : Bool() ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
 	[[ BinaryOperation(AndOp(),  		a,b) ^ (s) : Bool() ]] 		:= [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
 	[[ BinaryOperation(OrOp(),   		a,b) ^ (s) : Bool() ]] 		:= [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
-	[[ BinaryOperation(ConcatOp(), 		a,b) ^ (s) : List(ty) ]] 	:= [[ a ^ (s) : ty ]], 	   [[ b ^ (s) : List(ty) ]].
+	[[ Concat(							a,b) ^ (s) : List(ty) ]] 	:= [[ a ^ (s) : ty ]], 	   [[ b ^ (s) : List(ty) ]].
 	
 	[[ UnaryOperation(NotOp(),   		a) ^ (s) : Bool() ]] 		:= [[ a ^ (s) : Bool() ]].
 	[[ UnaryOperation(NegativeOp(), 	a) ^ (s) : Int() ]] 		:= [[ a ^ (s) : Int() ]].
