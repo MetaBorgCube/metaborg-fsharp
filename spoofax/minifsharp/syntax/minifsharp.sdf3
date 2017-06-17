@@ -87,7 +87,7 @@ context-free syntax
 																														ge(col(first(2)),sub(col(first(1)), num("2")))))} // op is allowed to be two columns to the left
 	Expression.Mult				= <<Expression> * <Expression>>										{left,layout(and(	ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
 																														ge(col(first(2)),sub(col(first(1)), num("2")))))} // op is allowed to be two columns to the left
-	Expression.Concat			= <<Expression> :: <Expression>>									{left,layout(and(	ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
+	Expression.Concat			= <<Expression> :: <Expression>>									{right,layout(and(	ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
 																														ge(col(first(2)),sub(col(first(1)), num("3")))))} // op is allowed to be two columns to the left
 	Expression.And				= <<Expression> && <Expression>>									{left,layout(and(	ge(col(first(3)),col(first(1))),				  // second expression should not be further to the left
 																														ge(col(first(2)),sub(col(first(1)), num("3")))))} // op is allowed to be two columns to the left
@@ -201,9 +201,10 @@ context-free priorities
 	    Expression.Plus
 		Expression.Min
 		Expression.Mult
-		Expression.Concat
 		Expression.And
 		Expression.Or
+	} > { right:
+		Expression.Concat
 	} > { left:
 		Expression.Negative
 		Expression.Not
