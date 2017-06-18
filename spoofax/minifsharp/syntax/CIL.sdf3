@@ -123,14 +123,18 @@ Ctor.DefaultCtor = <.method assembly specialname rtspecialname instance default 
   ret
 }>
 
+CallType.Static = <>
+CallType.Instance = <instance>
+
 Instruction.LoadArg = <ldarg.<Int>>
 Instruction.LoadLocal = <ldloc.<Int>>
 Instruction.StoreLocal = <stloc.<Int>>
 Instruction.StoreField = <stfld <Type> Test1/<Name>::<Name>>
 Instruction.LoadField = <ldfld <Type> Test1/<Name>::<Name>>
-
-Instruction.NewObj = <newobj instance void class Test1/<Name>::'.ctor'( <{Type ","}*> )>
-Instruction.Call = <call <Type> class Test1::<Name>( <{Type ","}*> )>
+Instruction.NewObj = <newobj instance void <LiberalString>::'.ctor'( <{Type ","}*> )>
+Instruction.Call = <call <CallType> <LiberalString> <LiberalString>::<Name><GenericTypeIndicator?>( <{LiberalString ","}*> )>
+Instruction.LoadString = <ldstr "<LiberalString>">
+Instruction.Throw = <throw>
 Instruction.CallVirt = <callvirt instance !1 <Type>::Invoke(!0)>
 Instruction.CallConstructor = <call instance void <LiberalString>::'.ctor'()>
 Instruction.Ldc = <ldc.i4 <Int>>
@@ -148,6 +152,8 @@ Instruction.Ceq = <ceq>
 Instruction.Clt = <clt>
 Instruction.Br = <br <LabelRef>>
 Instruction.Bne = <bne.un <LabelRef>>
+Instruction.Bgt = <bgt.un <LabelRef>>
+Instruction.Blt = <blt.un <LabelRef>>
 Instruction.BrFalse = <brfalse <LabelRef>>
 Instruction.Label = <<String>: >
 

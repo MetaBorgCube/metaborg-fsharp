@@ -45,6 +45,7 @@ constructors
 	// List
 	
 	EmptyList					: List
+	EmptyPatternList            : PatternList
 
 rules
 
@@ -83,8 +84,11 @@ rules
 	 
 	// List expressions
 	
-	desugar: List([a|b])  				-> Concat(a, b)
+	desugar: List([a|b])  				-> Concat(a, <desugar>List(b))
 	desugar: List([]) 					-> EmptyList()
+	
+	desugar: PatternList([a|b])         -> PatternConcat(a, <desugar>PatternList(b))
+	desugar: PatternList([])            -> EmptyPatternList()
 	
 	// Let Expressions
 	

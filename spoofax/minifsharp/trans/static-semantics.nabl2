@@ -130,12 +130,11 @@ rules
     	Pattern [[ p1 ^ (s) : ty ]],
     	Pattern [[ p2 ^ (s) : ty ]].
     	
-    Pattern [[ PatternList(p) ^ (s) : List(ty) ]] :=
-    	Map1UT(Pattern) [[ p ^ (s) : ty ]].
+	Pattern [[ EmptyPatternList() ^ (s) : ty ]].
     	
-    Pattern [[ PatternConcat(p, plist) ^ (s) : List(ty) ]] :=
+    Pattern [[ PatternConcat(p1, p2) ^ (s) : List(ty) ]] :=
     	Pattern [[ p1 ^ (s) : ty ]],
-    	Pattern [[ p2 ^ (s) : ty ]].
+    	Pattern [[ p2 ^ (s) : List(ty) ]].
     	
 	Pattern [[ PatternTuple(plist) ^ (s) : Tuple(ty) ]] :=
 		Map1T(Pattern) [[ plist ^ (s) : ty]].

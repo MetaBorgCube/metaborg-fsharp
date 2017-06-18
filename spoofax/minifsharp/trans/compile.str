@@ -63,7 +63,7 @@ rules
 		freeVars     := <getFreeVars> ([], targetFunc);
 		freeVarTys   := <map(nabl2-get-ast-type)> freeVars;
 		loadFreeVars := <mapconcat(\x->(x, context)\;program-to-cil)> freeVars;
-		callCtor     := [NewObj(<concat-strings> [name, "_0"], <map(type-to-cil)> freeVarTys)];
+		callCtor     := [NewObj(<concat-strings> ["class Test1/", name, "_0"], <map(type-to-cil)> freeVarTys)];
 		loadArg      := <program-to-cil> (b, context);
 		invokeFunc   := [CallVirt(<type-to-cil> funTy)];
 		result       :=  <concat> [
@@ -145,7 +145,8 @@ rules
 		ty := <nabl2-get-ast-type> e;
 		a := <program-to-cil> (e, context);	
 		b := <mapconcat(\x -> <match-to-cil> (ty, x, endOfMatch, (func, allWildcards))\)> matches;
-		result := <concat> [a, b, [Label(endOfMatch)]]
+		nomatch := [LoadString(""), Ldc("0"), Ldc("0"), NewObj("class [FSharp.Core]Microsoft.FSharp.Core.MatchFailureException", ["string", "int32", "int32"]), Throw()];
+		result := <concat> [a, b, nomatch, [Label(endOfMatch)]]
 	
 	match-to-cil: (Bool(), a, b, c) -> <match-to-cil> (Int(), a, b, c) // bool is handled the same as ints
 	match-to-cil: (Int(), Rule(Wildcard(), rhs), endOfMatch, context) -> result with
@@ -161,8 +162,75 @@ rules
 		a := <program-to-cil> (lhs, context);
 		b := <program-to-cil> (rhs, context);
 		result := <concat> [[Dup()], a, [Bne(LabelRef(endOfRule)), Pop()], b, [Br(LabelRef(endOfMatch)),Label(endOfRule)]]
-
 		
+	match-to-cil: (ty@List(x), Rule(lhs, rhs), endOfMatch, context@(func,wildcards)) -> result with
+		endOfRule := <newname>;
+		
+		
+		getListLen := [Call(Static(), "int32", "class [FSharp.Core]Microsoft.FSharp.Collections.ListModule", "Length", Some(GenericTypeIndicator(<type-to-cil> x)), "class [FSharp.Core]Microsoft.FSharp.Collections.FSharpList`1<!!0>")]; 
+		pushLhsLen := [Ldc(<getPatternListLength;int-to-string> lhs)];
+		if <endsWithIdentifier> lhs then
+			comparison := [Blt(LabelRef(endOfRule))]
+		else
+			comparison := [Bne(LabelRef(endOfRule))]
+		end;
+		elemComparisons := <compareLists> (lhs, (ty, endOfRule, context));
+		b := <program-to-cil> (rhs, context);
+		result := <concat> [
+			[Dup(), Dup()], 
+			getListLen,
+			pushLhsLen,
+			comparison,
+			elemComparisons,
+			[Pop(), Pop()],
+			b, 
+			[Br(LabelRef(endOfMatch)),Label(endOfRule)]]
+	
+	
+	compareLists: (EmptyPatternList(), rest) -> []
+	compareLists: (PatternConcat(a,b), rest) -> <concat>[<compareSingleListElem> (a,rest), <compareLists> (b,rest)]
+	compareLists: (Wildcard(), (_, _, context@(_,wildcards))) -> []
+	compareLists: (a@Identifier(_), (_, _, context@(_,wildcards))) -> result with // tail: entire capture remaining list
+		idx := <getIdentifierIndex> (wildcards, a);
+		result := [Dup(), StoreLocal(<int-to-string> idx)]
+	
+	compareSingleListElem: (Wildcard(), (ty, endOfRule, context@(_,wildcards))) -> result with 
+		result := [Dup(), Call(Instance(), "!0", <type-to-cil> ty, "get_HeadOrDefault", None(), []), Pop(), <getListTail> ty]
+		
+	compareSingleListElem: (a@Identifier(x), (ty, endOfRule, context@(_,wildcards))) -> result with 
+		idx := <getIdentifierIndex> (wildcards, a);
+		result := [Dup(), Call(Instance(), "!0", <type-to-cil> ty, "get_HeadOrDefault", None(), []), StoreLocal(<int-to-string> idx), <getListTail> ty]
+	
+	compareSingleListElem: (a, (ty, endOfRule, context@(_,wildcards))) -> 
+		<concat>
+		[[Dup(), Call(Instance(), "!0", <type-to-cil> ty, "get_HeadOrDefault", None(), [])],
+		 <program-to-cil> (a,context), 
+		 [Bne(LabelRef(endOfRule)), <getListTail> ty]]
+
+	getListTail: ty -> <debugq> Call(Instance(), "class [FSharp.Core]Microsoft.FSharp.Collections.FSharpList`1<!0>", <type-to-cil> ty, "get_TailOrNull", None(), [])
+	endsWithIdentifier: PatternConcat(a,b) -> <endsWithIdentifier> b
+	endsWithIdentifier: a@Identifier(_) -> a
+	endsWithIdentifier: _ -> <fail>
+	
+	getPatternListLength: PatternConcat(a,b) -> <add> (1, <getPatternListLength> b) 
+	getPatternListLength: EmptyPatternList() -> 0
+	getPatternListLength: Identifier(_) -> 0	
+	
+	
+	
+	program-to-cil: (c@Concat(a,b), context) -> <concat-to-cil> (c, <nabl2-get-ast-type> c, context)
+	program-to-cil: (c@EmptyList(), context) -> <concat-to-cil> (c, <nabl2-get-ast-type> c, context)
+	
+	concat-to-cil: (c@EmptyList(), ty@List(x), context) ->
+		[Call(Static(), "class [FSharp.Core]Microsoft.FSharp.Collections.FSharpList`1<!0>", <nabl2-get-ast-type;type-to-cil>c, "get_Empty", None(), "")]
+	concat-to-cil: (c@Concat(a,b), ty@List(x), context) -> result with
+		
+		cilA := <program-to-cil> (a, context);
+		cilB := <concat-to-cil> (b, ty, context);
+		call := Call(Static(), "class [FSharp.Core]Microsoft.FSharp.Collections.FSharpList`1<!0>", <nabl2-get-ast-type;type-to-cil>c, "Cons", None(), ["!0", "class [FSharp.Core]Microsoft.FSharp.Collections.FSharpList`1<!0>"]);
+		result := <concat> [cilA, cilB, [call]] 
+	
+
 		
 	getLetArgs: Let   (_,_, args, _, _) -> args
 
@@ -248,9 +316,9 @@ rules
 		tys             := <concat> [argTys, freeVarTys];
 		if <lt> (<length>nextArgs, 2) then 
 			funcName    := <concat-strings> ["get_", className];
-			callNext    := [Call(<ret-type-to-cil> funTy, funcName, tys), Ret()] 
+			callNext    := [Call(Static(), <ret-type-to-cil> funTy, "class Test1", funcName, None(), tys), Ret()] 
 		else 
-			callNext    := [NewObj(<concat-strings> [className, "_", <addS> ("1", <length;int-to-string> processed)], tys)]
+			callNext    := [NewObj(<concat-strings> ["class Test1/", className, "_", <addS> ("1", <length;int-to-string> processed)], tys)]
 		end;
 		result          := <concat> [
 			loadCurriedArgs,
