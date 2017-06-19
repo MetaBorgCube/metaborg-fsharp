@@ -158,7 +158,7 @@ rules
 	// otherwise, leave exp on stack
 	
 
-	match-to-cil: (_, Wildcard(), endOfRule, context) -> []
+	match-to-cil: (_, Wildcard(), endOfRule, context) -> [Pop()]
 	match-to-cil: (_, a@Identifier(_), endOfRule, context@(func,wildcards)) -> result with
 		begin:= <newname> "match_to_cil_intID_begin_";
 		end  := <newname> "match_to_cil_intID_end_";
@@ -172,6 +172,32 @@ rules
 		end  :=  <newname> "match_to_cil_int_end_";
 		a := <concat> [[Dup()], <program-to-cil> (lhs, context), [Bne(LabelRef(endOfRule))]];
 		result := <concat> [[Label(begin)], a, [Pop(), Label(end)]]
+	
+	
+	match-to-cil: (tupleTy@Tuple(l1), lhs@PatternTuple(l2), endOfRule, context) -> result with 
+		begin:=  <newname>"tupleMatch_begin_";
+		end  := <newname>"tupleMatch_end_";
+		noMatch := <newname> "tupleMatch_nomatch_";
+		match := <newname> "tupleMatch_match_";
+		elemComparisons := <zip;number(id); mapconcat(\((elemTy,lhsElem), idx) -> <tupleElem-to-cil> (elemTy, lhsElem, idx, tupleTy, lhs, noMatch, context)\)> (l1, l2);
+		result := <concat> [[Label(begin)], elemComparisons, [Pop(),Br(end), Label(noMatch), Br(endOfRule), Label(end)]] 
+	
+	// always leaves item on stack
+	tupleElem-to-cil: (elemTy, lhsElem, idx, tupleTy, lhs, endOfRule, context) ->  result with
+		begin:=  <newname>"tupleElem_begin_";
+		end  := <newname>"tupleElem_end_";
+		noMatch := <newname> "tupleElem_nomatch_";
+		match := <newname> "tupleElem_match_";
+		getItem := [Call(Instance(), <concat-strings>["!", <int-to-string>idx], <type-to-cil> tupleTy, <concat-strings>["get_Item", <add;int-to-string> (1,idx)], None(), [])];
+		a := <match-to-cil> (elemTy, lhsElem, noMatch, context);
+		result := <concat>[
+			[Label(begin), Dup()], // duplicate tuple 
+			getItem, // consumes tuple
+			a,
+			[Br(match), Label(noMatch), Pop(), // pop elem 
+			 Br(endOfRule), Label(match)], 
+			[Label(end)]
+			]
 		
 	match-to-cil: (ty@List(x), lhs, endOfRule, context@(func,wildcards)) -> result with
 		begin:=  <newname>"match_to_cil_list_begin_";
