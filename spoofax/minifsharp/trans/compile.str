@@ -37,7 +37,7 @@ rules
 	show-cil: (selected, _, ast, path, project-path) -> (filename, result) with
 	    filename := <guarantee-extension(|$[cil])> path;
 	      a         := <nabl2-get-ast-analysis> ast;
-		result := <desugar-all; program-to-cil; pp-debug> ast
+		result := <desugar-all; program-to-cil;  pp-debug> ast
 
 	program-to-cil: Program(e,l@Let(_,a,b,c,d)) -> result with
 		wildcardVars := <getNamedWildcars;map(nabl2-get-ast-type; strip-forall; type-to-cil)> d; 
@@ -141,31 +141,40 @@ rules
 	program-to-cil: (match@Match(e, matches), context@(func, wildcardDefs)) -> result with
 		namedWildcards := <getNamedWildcars> matches;
 		allWildcards := <union> (wildcardDefs, namedWildcards);
-		endOfMatch := <newname>;
+		endOfMatch := <newname> "endOfMatch_";
 		ty := <nabl2-get-ast-type> e;
 		a := <program-to-cil> (e, context);	
-		b := <mapconcat(\x -> <match-to-cil> (ty, x, endOfMatch, (func, allWildcards))\)> matches;
-		nomatch := [LoadString(""), Ldc("0"), Ldc("0"), NewObj("class [FSharp.Core]Microsoft.FSharp.Core.MatchFailureException", ["string", "int32", "int32"]), Throw()];
+		b := <mapconcat(\x -> <superMatch-to-cil> (ty, x, endOfMatch, (func, allWildcards))\)> matches;
+		nomatch := [Pop(), LoadString(""), Ldc("0"), Ldc("0"), NewObj("class [FSharp.Core]Microsoft.FSharp.Core.MatchFailureException", ["string", "int32", "int32"]), Throw()];
 		result := <concat> [a, b, nomatch, [Label(endOfMatch)]]
 	
+	superMatch-to-cil: (ty, Rule(lhs, rhs), endOfMatch, context) -> result with
+		endOfRule := <newname> "endOfRule_";
+		comparison := <match-to-cil> (ty, lhs, endOfRule, context);
+		b := <program-to-cil> (rhs, context);
+		result := <concat> [comparison, b, [Br(LabelRef(endOfMatch)), Label(endOfRule)]]
+	
+	// if match, leave nothing on stack
+	// otherwise, leave exp on stack
+	
 	match-to-cil: (Bool(), a, b, c) -> <match-to-cil> (Int(), a, b, c) // bool is handled the same as ints
-	match-to-cil: (Int(), Rule(Wildcard(), rhs), endOfMatch, context) -> result with
-		b := <program-to-cil> (rhs, context);
-		result := <concat> [[Pop()], b, [Br(LabelRef(endOfMatch))]]
-	match-to-cil: (Int(), Rule(a@Identifier(_), rhs), endOfMatch, context@(func,wildcards)) -> result with
+	match-to-cil: (_, Wildcard(), endOfRule, context) -> []
+	match-to-cil: (Int(), a@Identifier(_), endOfRule, context@(func,wildcards)) -> result with
+		begin:= <newname> "match_to_cil_intID_begin_";
+		end  := <newname> "match_to_cil_intID_end_";
+		
 		idx := <getIdentifierIndex> (wildcards, a);
-		b := <program-to-cil> (rhs, context);
-		result := <concat> [[StoreLocal(<int-to-string> idx)], b, [Br(LabelRef(endOfMatch))]]
+		result := [Label(begin),StoreLocal(<int-to-string> idx), Label(end)]
 		
-	match-to-cil: (Int(), Rule(lhs, rhs), endOfMatch, context) -> result with
-		endOfRule := <newname>;
-		a := <program-to-cil> (lhs, context);
-		b := <program-to-cil> (rhs, context);
-		result := <concat> [[Dup()], a, [Bne(LabelRef(endOfRule)), Pop()], b, [Br(LabelRef(endOfMatch)),Label(endOfRule)]]
+	match-to-cil: (Int(), lhs, endOfRule, context) -> result with
+		begin:= <newname> "match_to_cil_int_begin_";
+		end  :=  <newname> "match_to_cil_int_end_";
+		a := <concat> [[Dup()], <program-to-cil> (lhs, context), [Bne(LabelRef(endOfRule))]];
+		result := <concat> [[Label(begin)], a, [Pop(), Label(end)]]
 		
-	match-to-cil: (ty@List(x), Rule(lhs, rhs), endOfMatch, context@(func,wildcards)) -> result with
-		endOfRule := <newname>;
-		
+	match-to-cil: (ty@List(x), lhs, endOfRule, context@(func,wildcards)) -> result with
+		begin:=  <newname>"match_to_cil_list_begin_";
+		end  := <newname>"match_to_cil_list_end_";
 		
 		getListLen := [Call(Static(), "int32", "class [FSharp.Core]Microsoft.FSharp.Collections.ListModule", "Length", Some(GenericTypeIndicator(<type-to-cil> x)), "class [FSharp.Core]Microsoft.FSharp.Collections.FSharpList`1<!!0>")]; 
 		pushLhsLen := [Ldc(<getPatternListLength;int-to-string> lhs)];
@@ -174,32 +183,52 @@ rules
 		else
 			comparison := [Bne(LabelRef(endOfRule))]
 		end;
-		elemComparisons := <compareLists> (lhs, (ty, endOfRule, context));
-		b := <program-to-cil> (rhs, context);
+		elemComparisons := <compareItems> (lhs, (ty, endOfRule, context));
 		result := <concat> [
-			[Dup(), Dup()], 
+			[Label(begin), Dup()], 
 			getListLen,
 			pushLhsLen,
 			comparison,
 			elemComparisons,
-			[Pop(), Pop()],
-			b, 
-			[Br(LabelRef(endOfMatch)),Label(endOfRule)]]
+			[Label(end)]]
+	
+	match-to-cil: (ty@ExpTuple(x), Rule(lhs, rhs), endOfMatch, context@(func,wildcards)) -> result with
+		result := []
+	
+//	compareTuple: x -> [] // int/bool/wildcard
 	
 	
-	compareLists: (EmptyPatternList(), rest) -> []
-	compareLists: (PatternConcat(a,b), rest) -> <concat>[<compareSingleListElem> (a,rest), <compareLists> (b,rest)]
-	compareLists: (Wildcard(), (_, _, context@(_,wildcards))) -> []
-	compareLists: (a@Identifier(_), (_, _, context@(_,wildcards))) -> result with // tail: entire capture remaining list
-		idx := <getIdentifierIndex> (wildcards, a);
-		result := [Dup(), StoreLocal(<int-to-string> idx)]
+	compareItems: (EmptyPatternList(), rest) -> [Pop()]
+	compareItems: (PatternConcat(a,b), (ty@List(x), endOfRule, context@(_,wildcards))) -> result with 
+		begin:= <newname>"compareItems_begin_";
+		end  := <newname>"compareItems_end_";
 	
-	compareSingleListElem: (Wildcard(), (ty, endOfRule, context@(_,wildcards))) -> result with 
-		result := [Dup(), Call(Instance(), "!0", <type-to-cil> ty, "get_HeadOrDefault", None(), []), Pop(), <getListTail> ty]
-		
-	compareSingleListElem: (a@Identifier(x), (ty, endOfRule, context@(_,wildcards))) -> result with 
-		idx := <getIdentifierIndex> (wildcards, a);
-		result := [Dup(), Call(Instance(), "!0", <type-to-cil> ty, "get_HeadOrDefault", None(), []), StoreLocal(<int-to-string> idx), <getListTail> ty]
+		noMatch := <newname> "compareItems_nomatch_";
+		match := <newname> "compareItems_match_";
+		result := <concat>[
+			[Label(begin), Dup(), Call(Instance(), "!0", <type-to-cil> ty, "get_HeadOrDefault", None(), [])], 
+			<match-to-cil> (x, a, noMatch, context), 
+			[Dup()],
+			<getListTail> ty,
+			<compareItems> (b, (ty, noMatch, context)),
+			[Br(match), 
+			   Label(noMatch), Pop(), // pop head/tail
+			   Br(endOfRule), Label(match), Pop(), Label(end)]
+			]
+//		result := <concat>[<compareSingleListElem> (a,rest), <compareItems> (b,rest)]
+//	compareItems: (Wildcard(), (_, _, context@(_,wildcards))) -> []
+//	compareItems: (a@Identifier(_), (_, _, context@(_,wildcards))) -> result with // tail: entire capture remaining list
+//		idx := <getIdentifierIndex> (wildcards, a);
+//		result := [Dup(), StoreLocal(<int-to-string> idx)]
+//	compareItems: (a@PatternTuple(_),rest) -> [] // compare all items
+//	compareItems: (a, rest@(ty, endOfRule, context)) -> <concat> [[Dup()], <program-to-cil> (a, context), [Bne(LabelRef(endOfRule))]]
+//	
+//	compareSingleListElem: (Wildcard(), (ty, endOfRule, context@(_,wildcards))) -> result with 
+//		result := [Dup(), Call(Instance(), "!0", <type-to-cil> ty, "get_HeadOrDefault", None(), []), Pop(), <getListTail> ty]
+//		
+//	compareSingleListElem: (a@Identifier(x), (ty, endOfRule, context@(_,wildcards))) -> result with 
+//		idx := <getIdentifierIndex> (wildcards, a);
+//		result := [Dup(), Call(Instance(), "!0", <type-to-cil> ty, "get_HeadOrDefault", None(), []), StoreLocal(<int-to-string> idx), <getListTail> ty]
 	
 	compareSingleListElem: (a, (ty, endOfRule, context@(_,wildcards))) -> 
 		<concat>
@@ -207,7 +236,11 @@ rules
 		 <program-to-cil> (a,context), 
 		 [Bne(LabelRef(endOfRule)), <getListTail> ty]]
 
-	getListTail: ty -> <debugq> Call(Instance(), "class [FSharp.Core]Microsoft.FSharp.Collections.FSharpList`1<!0>", <type-to-cil> ty, "get_TailOrNull", None(), [])
+	getListTail: ty -> result with
+		begin:= <newname>"getListTail_begin_";
+		end  := <newname>"getListTail_end_";
+		result := <debug(|"line224 ")> [Label(begin),Call(Instance(), "class [FSharp.Core]Microsoft.FSharp.Collections.FSharpList`1<!0>", <type-to-cil> ty, "get_TailOrNull", None(), []), Label(end)]
+		
 	endsWithIdentifier: PatternConcat(a,b) -> <endsWithIdentifier> b
 	endsWithIdentifier: a@Identifier(_) -> a
 	endsWithIdentifier: _ -> <fail>
@@ -217,6 +250,14 @@ rules
 	getPatternListLength: Identifier(_) -> 0	
 	
 	
+	
+	getTupleArgList: ([hd|tl], idx) -> <concat> [<concat-strings> ["!"], <getTupleArgList> (tl, <add> (1, idx))]
+	
+	program-to-cil: (c@ExpTuple(l), context) -> result with
+		items := <mapconcat(\x -> <program-to-cil> (x, context)\)> l;
+		paramTys := <length; range; map(\x -> <concat-strings> ["!", <int-to-string>x]\)> l;
+		ctor := [NewObj(<nabl2-get-ast-type;type-to-cil> c, paramTys)];
+		result := <concat> [items, ctor]
 	
 	program-to-cil: (c@Concat(a,b), context) -> <concat-to-cil> (c, <nabl2-get-ast-type> c, context)
 	program-to-cil: (c@EmptyList(), context) -> <concat-to-cil> (c, <nabl2-get-ast-type> c, context)
