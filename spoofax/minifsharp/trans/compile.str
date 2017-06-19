@@ -157,15 +157,16 @@ rules
 	// if match, leave nothing on stack
 	// otherwise, leave exp on stack
 	
-	match-to-cil: (Bool(), a, b, c) -> <match-to-cil> (Int(), a, b, c) // bool is handled the same as ints
+
 	match-to-cil: (_, Wildcard(), endOfRule, context) -> []
-	match-to-cil: (Int(), a@Identifier(_), endOfRule, context@(func,wildcards)) -> result with
+	match-to-cil: (_, a@Identifier(_), endOfRule, context@(func,wildcards)) -> result with
 		begin:= <newname> "match_to_cil_intID_begin_";
 		end  := <newname> "match_to_cil_intID_end_";
 		
 		idx := <getIdentifierIndex> (wildcards, a);
 		result := [Label(begin),StoreLocal(<int-to-string> idx), Label(end)]
-		
+	
+	match-to-cil: (Bool(), a, b, c) -> <match-to-cil> (Int(), a, b, c) // bool is handled the same as ints	
 	match-to-cil: (Int(), lhs, endOfRule, context) -> result with
 		begin:= <newname> "match_to_cil_int_begin_";
 		end  :=  <newname> "match_to_cil_int_end_";
@@ -215,20 +216,7 @@ rules
 			   Label(noMatch), Pop(), // pop head/tail
 			   Br(endOfRule), Label(match), Pop(), Label(end)]
 			]
-//		result := <concat>[<compareSingleListElem> (a,rest), <compareItems> (b,rest)]
-//	compareItems: (Wildcard(), (_, _, context@(_,wildcards))) -> []
-//	compareItems: (a@Identifier(_), (_, _, context@(_,wildcards))) -> result with // tail: entire capture remaining list
-//		idx := <getIdentifierIndex> (wildcards, a);
-//		result := [Dup(), StoreLocal(<int-to-string> idx)]
-//	compareItems: (a@PatternTuple(_),rest) -> [] // compare all items
-//	compareItems: (a, rest@(ty, endOfRule, context)) -> <concat> [[Dup()], <program-to-cil> (a, context), [Bne(LabelRef(endOfRule))]]
-//	
-//	compareSingleListElem: (Wildcard(), (ty, endOfRule, context@(_,wildcards))) -> result with 
-//		result := [Dup(), Call(Instance(), "!0", <type-to-cil> ty, "get_HeadOrDefault", None(), []), Pop(), <getListTail> ty]
-//		
-//	compareSingleListElem: (a@Identifier(x), (ty, endOfRule, context@(_,wildcards))) -> result with 
-//		idx := <getIdentifierIndex> (wildcards, a);
-//		result := [Dup(), Call(Instance(), "!0", <type-to-cil> ty, "get_HeadOrDefault", None(), []), StoreLocal(<int-to-string> idx), <getListTail> ty]
+	compareItems: (a, (ty, endOfRule, context)) -> <match-to-cil> (ty, a, endOfRule, context)
 	
 	compareSingleListElem: (a, (ty, endOfRule, context@(_,wildcards))) -> 
 		<concat>
@@ -239,7 +227,7 @@ rules
 	getListTail: ty -> result with
 		begin:= <newname>"getListTail_begin_";
 		end  := <newname>"getListTail_end_";
-		result := <debug(|"line224 ")> [Label(begin),Call(Instance(), "class [FSharp.Core]Microsoft.FSharp.Collections.FSharpList`1<!0>", <type-to-cil> ty, "get_TailOrNull", None(), []), Label(end)]
+		result := [Label(begin),Call(Instance(), "class [FSharp.Core]Microsoft.FSharp.Collections.FSharpList`1<!0>", <type-to-cil> ty, "get_TailOrNull", None(), []), Label(end)]
 		
 	endsWithIdentifier: PatternConcat(a,b) -> <endsWithIdentifier> b
 	endsWithIdentifier: a@Identifier(_) -> a
