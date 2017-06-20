@@ -1,0 +1,148 @@
+module compile-pattern-matching
+
+imports
+
+  libstratego-gpp
+  libspoofax/stratego/debug
+  libstratego-lib
+  src-gen/signatures/-
+  nabl2/api
+  trans/pp
+  trans/desugar
+  trans/minifsharp
+  src-gen/nabl2/static-semantics
+  trans/compile
+
+signature constructors
+	
+	Output: String * String -> Term
+	
+rules
+		
+// Match
+	
+	eq-ast: (a,a) -> [a]
+	eq-ast: (a,b) -> []
+	
+	isNamedWildcard: a@Identifier(x) -> result with
+		result := <eq-ast> (a, <getOrigin> a)
+	getNamedWildcars: x -> < collect-all(?Identifier(_));  mapconcat(isNamedWildcard)> x
+	
+	program-to-cil: (match@Match(e, matches), context@(func, wildcardDefs)) -> result with
+		namedWildcards := <getNamedWildcars> matches;
+		allWildcards := <union> (wildcardDefs, namedWildcards);
+		endOfMatch := <newname> "endOfMatch_";
+		ty := <nabl2-get-ast-type> e;
+		a := <program-to-cil> (e, context);	
+		b := <mapconcat(\x -> <superMatch-to-cil> (ty, x, endOfMatch, (func, allWildcards))\)> matches;
+		nomatch := [Pop(), LoadString(""), Ldc("0"), Ldc("0"), NewObj(ClassType(Module("FSharp.Core"), ClassName("Microsoft.FSharp.Core.MatchFailureException"), NonGeneric()), [StringType(), IntType(), IntType()]), Throw()];
+		result := <concat> [a, b, nomatch, [Label(endOfMatch)]]
+	
+	superMatch-to-cil: (ty, Rule(lhs, rhs), endOfMatch, context) -> result with
+		endOfRule := <newname> "endOfRule_";
+		comparison := <match-to-cil> (ty, lhs, endOfRule, context);
+		b := <program-to-cil> (rhs, context);
+		result := <concat> [comparison, b, [Br(LabelRef(endOfMatch)), Label(endOfRule)]]
+	
+	
+	
+	// Convention for match-to-cil: Caller pushes exp onto the stack. If match, leave nothing on stack. Otherwise, leave exp on stack.
+	
+
+	match-to-cil: (_, Wildcard(), endOfRule, context) -> [Pop()]
+	match-to-cil: (_, a@Identifier(_), endOfRule, context@(func,wildcards)) -> result with
+		begin:= <newname> "match_to_cil_intID_begin_";
+		end  := <newname> "match_to_cil_intID_end_";
+		idx := <getIdentifierIndex> (wildcards, a);
+		result := [Label(begin),StoreLocal(<int-to-string> idx), Label(end)]
+	
+	match-to-cil: (Bool(), a, b, c) -> <match-to-cil> (Int(), a, b, c) // bool is handled the same as ints	
+	match-to-cil: (Int(), lhs, endOfRule, context) -> result with
+		begin:= <newname> "match_to_cil_int_begin_";
+		end  :=  <newname> "match_to_cil_int_end_";
+		a := <concat> [[Dup()], <program-to-cil> (lhs, context), [Bne(LabelRef(endOfRule))]];
+		result := <concat> [[Label(begin)], a, [Pop(), Label(end)]]
+	
+	
+	match-to-cil: (tupleTy@Tuple(l1), lhs@PatternTuple(l2), endOfRule, context) -> result with 
+		begin:=  <newname>"tupleMatch_begin_";
+		end  := <newname>"tupleMatch_end_";
+		noMatch := <newname> "tupleMatch_nomatch_";
+		match := <newname> "tupleMatch_match_";
+		elemComparisons := <zip;number(id); mapconcat(\((elemTy,lhsElem), idx) -> <tupleElem-to-cil> (elemTy, lhsElem, idx, tupleTy, lhs, noMatch, context)\)> (l1, l2);
+		result := <concat> [[Label(begin)], elemComparisons, [Pop(),Br(end), Label(noMatch), Br(endOfRule), Label(end)]] 
+	
+	match-to-cil: (ty@List(x), lhs, endOfRule, context@(func,wildcards)) -> result with
+		begin:=  <newname>"match_to_cil_list_begin_";
+		end  := <newname>"match_to_cil_list_end_";
+		listModuleClass := ClassType(Module("FSharp.Core"), ClassName("Microsoft.FSharp.Collections.ListModule"), NonGeneric());
+		lengthRetTy := ClassType(Module("FSharp.Core"), ClassName("Microsoft.FSharp.Collections.FSharpList"), GenericClassTypeArgs("1", [ArgType2("0")]));
+		getListLen := [Call(Static(), IntType(), listModuleClass, "Length", Some(GenericTypeIndicator([<type-to-cil> x])), [lengthRetTy])]; 
+		pushLhsLen := [Ldc(<getPatternListLength;int-to-string> lhs)];
+		if <endsWithIdentifier> lhs then
+			comparison := [Blt(LabelRef(endOfRule))]
+		else
+			comparison := [Bne(LabelRef(endOfRule))]
+		end;
+		elemComparisons := <compareItems> (lhs, (ty, endOfRule, context));
+		result := <concat> [
+			[Label(begin), Dup()], 
+			getListLen,
+			pushLhsLen,
+			comparison,
+			elemComparisons,
+			[Label(end)]]
+	
+	
+	// Caller pushes complete tuple on stack. This function always leaves the tuple on stack, regardless of whether or not it matches
+	tupleElem-to-cil: (elemTy, lhsElem, idx, tupleTy, lhs, endOfRule, context) ->  result with
+		begin:=  <newname>"tupleElem_begin_";
+		end  := <newname>"tupleElem_end_";
+		noMatch := <newname> "tupleElem_nomatch_";
+		match := <newname> "tupleElem_match_";
+		getItem := [Call(Instance(), <concat-strings>["!", <int-to-string>idx], <type-to-cil> tupleTy, <concat-strings>["get_Item", <add;int-to-string> (1,idx)], None(), [])];
+		a := <match-to-cil> (elemTy, lhsElem, noMatch, context);
+		result := <concat>[
+			[Label(begin), Dup()], // duplicate tuple 
+			getItem, // consumes tuple
+			a,
+			[Br(match), Label(noMatch), Pop(), // pop elem 
+			 Br(endOfRule), Label(match)], 
+			[Label(end)]
+			]
+		
+	
+	compareItems: (EmptyPatternList(), rest) -> [Pop()]
+	compareItems: (PatternConcat(a,b), (ty@List(x), endOfRule, context@(_,wildcards))) -> result with 
+		begin:= <newname>"compareItems_begin_";
+		end  := <newname>"compareItems_end_";
+	
+		noMatch := <newname> "compareItems_nomatch_";
+		match := <newname> "compareItems_match_";
+		result := <concat>[
+			[Label(begin), Dup(), Call(Instance(), "!0", <type-to-cil> ty, "get_HeadOrDefault", None(), [])], 
+			<match-to-cil> (x, a, noMatch, context), 
+			[Dup()],
+			<getListTail> ty,
+			<compareItems> (b, (ty, noMatch, context)),
+			[Br(match), 
+			   Label(noMatch), Pop(), // pop head/tail
+			   Br(endOfRule), Label(match), Pop(), Label(end)]
+			]
+	compareItems: (a, (ty, endOfRule, context)) -> <match-to-cil> (ty, a, endOfRule, context)
+
+
+	getListTail: ty -> result with
+		begin:= <newname>"getListTail_begin_";
+		end  := <newname>"getListTail_end_";
+		result := [Label(begin),Call(Instance(), ClassType(Module("FSharp.Core"), ClassName("Microsoft.FSharp.Collections.FSharpList"), GenericClassTypeArgs("1", [ArgType1("0")])),
+			<type-to-cil> ty, "get_TailOrNull", None(), []), Label(end)]
+		
+	endsWithIdentifier: PatternConcat(a,b) -> <endsWithIdentifier> b
+	endsWithIdentifier: a@Identifier(_) -> a
+	endsWithIdentifier: _ -> <fail>
+	
+	getPatternListLength: PatternConcat(a,b) -> <add> (1, <getPatternListLength> b) 
+	getPatternListLength: EmptyPatternList() -> 0
+	getPatternListLength: Identifier(_) -> 0	
+	
