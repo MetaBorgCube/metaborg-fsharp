@@ -56,20 +56,23 @@ rules
 	
 	// first application: a is an identifier, hence need to call constructor with free vars as parameters
 	program-to-cil: (z@Application(a@Identifier(name),b), context) -> result with
-		funTy := <nabl2-get-ast-type;strip-forall> a;
-		targetFunc   := <getOrigin> a;
-		freeVars     := <getFreeVars> ([], targetFunc);
-		freeVarTys   := <map(nabl2-get-ast-type)> freeVars;
-		loadFreeVars := <mapconcat(\x->(x, context)\;program-to-cil)> freeVars;
-		callCtor     := [NewObj(ClassType(DefaultModule(), ClassName(<concat-strings>["Test1/", name, "_0"]), NonGeneric()), <map(type-to-cil)> freeVarTys)];
+		funTy 	 	 := <nabl2-get-ast-type;strip-forall> a;
+		loadFunc 	 := <loadFunction> (a, context);
 		loadArg      := <program-to-cil> (b, context);
 		invokeFunc   := [CallVirt(<type-to-cil> funTy)];
 		result       :=  <concat> [
-			loadFreeVars, 
-			callCtor, 
+			loadFunc, 
 			loadArg, 
 			invokeFunc
 		]
+		
+	loadFunction: (a@Identifier(name), context) -> result with
+		targetFunc   := <getOrigin> a;
+		freeVars     := <getFreeVars> ([], targetFunc);
+		loadFreeVars := <mapconcat(\x->(x, context)\;program-to-cil)> freeVars;
+		freeVarTys   := <map(nabl2-get-ast-type)> freeVars;
+		callCtor     := [NewObj(ClassType(DefaultModule(), ClassName(<concat-strings>["Test1/", name, "_0"]), NonGeneric()), <map(type-to-cil)> freeVarTys)];
+		result 	  	 := <concat> [loadFreeVars, callCtor]
 	
 	// not the first application: a is not an identifier, hence no need to call constructor with free vars as parameters
 	program-to-cil: (z@Application(a,b), context) -> result with
@@ -92,7 +95,7 @@ rules
 	arg-type-to-cil: (Function(x,y), argName, [TypedArgIdentifier(argName,_) | _]) -> <type-to-cil> x
 	arg-type-to-cil: (Function(x,y), argName, [_ | argTl])                         -> <arg-type-to-cil> (y, argName, argTl)
 	
-	ret-type-to-cil: Function(x,y) -> <ret-type-to-cil> y
+	ret-type-to-cil: Function(x,y) -> <type-to-cil> y
 	ret-type-to-cil: x             -> <type-to-cil> x
 	
 	sort-typevars: x -> <sort-list(LSort(\(a,b) -> <gtS>(<string-replace(|"T","")> a, <string-replace(|"T","")> b)\))> x
@@ -148,12 +151,16 @@ rules
 	getLetArgs: Let   (_,_, args, _, _) -> args
 
 
-	getVar: (identifier, (func, wildcardDefs)) -> result with
-		wildcardIdx := <getIdentifierIndex> (wildcardDefs, identifier);
-		if <lt> (wildcardIdx, 0) then 
-			result := [LoadArg(<getArg;int-to-string> (identifier, func))]
-		else 
-			result := [LoadLocal(<int-to-string> wildcardIdx)] 
+	getVar: (identifier, context@(func, wildcardDefs)) -> result with
+		if <getOrigin; ?Let(_,_,_,_,_)> identifier then
+			result := <loadFunction> (identifier, context)
+		else
+			wildcardIdx := <getIdentifierIndex> (wildcardDefs, identifier);
+			if <lt> (wildcardIdx, 0) then 
+				result := [LoadArg(<getArg;int-to-string> (identifier, func))]
+			else 
+				result := [LoadLocal(<int-to-string> wildcardIdx)] 
+			end
 		end
 
 	// returns index of the identifier in the sequence [param1, ..., paramn, freeVar1, ..., freeVarn] 

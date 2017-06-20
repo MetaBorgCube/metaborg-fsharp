@@ -109,7 +109,7 @@ LocalDefs.LocalDefs = <.locals init (
 
 Field.Field = <.field  public  <Typ> <Name>>
 
-Param.Param = <<String> <String>>
+Param.Param = <<Typ> <String>>
 
 Ctor.Ctor = <.method assembly specialname rtspecialname instance default void '.ctor' (<{Param ","}*>)  cil managed
 {
