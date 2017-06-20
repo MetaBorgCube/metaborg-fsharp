@@ -57,10 +57,7 @@ rules
 	// first application: a is an identifier, hence need to call constructor with free vars as parameters
 	program-to-cil: (z@Application(a@Identifier(name),b), context) -> result with
 		funTy := <nabl2-get-ast-type;strip-forall> a;
-		node         := <nabl2-get-ast-analysis> name;
-		ref-occ      := <nabl2-mk-occurrence(|"Funcs")> name;
-		dec-occ      := <nabl2-get-resolved-name(|node); Fst> ref-occ;
-		targetFunc   := <nabl2-get-type(|node)> dec-occ;
+		targetFunc   := <getOrigin> a;
 		freeVars     := <getFreeVars> ([], targetFunc);
 		freeVarTys   := <map(nabl2-get-ast-type)> freeVars;
 		loadFreeVars := <mapconcat(\x->(x, context)\;program-to-cil)> freeVars;
@@ -289,16 +286,14 @@ rules
 	getFreeVars: (scope, None())                    -> [] 
 	getFreeVars: (scope, Some(x))                   -> <getFreeVars> (scope, x)
 	getFreeVars: (scope, BinaryOperation(op, a, b)) -> <concat> [<getFreeVars> (scope, a), <getFreeVars> (scope, b)]
-	getFreeVars: (scope, Const(_))                  -> []
+	getFreeVars: (scope, Concat(a, b))              -> <concat> [<getFreeVars> (scope, a), <getFreeVars> (scope, b)]
 	getFreeVars: (scope, Application(a,b)) 			-> <concat> [<getFreeVars> (scope, a), <getFreeVars> (scope, b)]
+	getFreeVars: (scope, Const(_))                  -> []
 	getFreeVars: (scope, Match(_,_)) 				-> [] // TODO
-	getFreeVars: (scope, x@Identifier(_), None()) -> <getFreeVar> (scope, x)
-	getFreeVars: (scope, x@Identifier(_), Some(func@Let(_,_,_,_,_))) -> <getFreeVars> (scope, func)
+	getFreeVars: (scope, x@Identifier(_), func@Let(_,_,_,_,_)) -> <getFreeVars> (scope, func)
+	getFreeVars: (scope, x@Identifier(_), _) 		-> <getFreeVar> (scope, x)
 	getFreeVars: (scope, x@Identifier(name)) -> result with 
-		node       := <nabl2-get-ast-analysis> name;
-		ref-occ    := <nabl2-mk-occurrence(|"Funcs")> name;
-		dec-occ    := <nabl2-get-resolved-name(|node); Fst> ref-occ;
-		targetFunc := <nabl2-get-type(|node)> dec-occ;
+		targetFunc := <getOrigin> x;
 		result     := <getFreeVars> (scope, x, targetFunc)
 	getFreeVars: (scope, ExprBlock(exp, tail)) -> result with  
 		args       := <getExprBlockArgs> (scope, exp);

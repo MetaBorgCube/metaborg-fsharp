@@ -82,9 +82,7 @@ rules
 		argCurried2 genOf(vars) argCurried,
 		Const{id}.origin := a, 
 		Const{id} <- s,
-		Const{id} : argCurried2,
-		Funcs{id} <- s,
-		Funcs{id} : Some(a).
+		Const{id} : argCurried2.
 	  
   	[[ a@Let(Recursive(), id, args, retId, body) ^ (s) : argCurried2 ]] := 
     	GetSpecifiedRetTy [[ retId ^ (s) : retTyp ]],
@@ -94,8 +92,6 @@ rules
 		s_body -P-> s,
 		Const{id}.origin := a, 
 		Const{id} <- s,
-		Funcs{id} <- s,
-		Funcs{id} : Some(a),
 		Const{id} : argCurried2,
 	    InnerExprBlock[[ body ^ (s_body) : retTyp]].
     
@@ -106,8 +102,6 @@ rules
 		Const{id}.origin := a, 
 		Const{id} <- s,
 		Const{id} : ty,
-		Funcs{id} <- s,
-		Funcs{id} : None(),
 	    InnerExprBlock[[ body ^ (s_body) : ty]].
     
     // Match Rules
@@ -154,11 +148,9 @@ rules
   	Pattern [[ a@Identifier(id) ^ (s) : ty]] :=
   		Const{id}.origin := a, 
 		Const{id} <- s,
-		Funcs{id} <- s,
 		Const{id} -> s, 
 	  	Const{id} |-> d,
-		Const{id} : ty,
-		Funcs{id} : None().
+		Const{id} : ty.
     
     // Union types
     
@@ -200,8 +192,6 @@ rules
   	[[ Identifier(id) ^ (s) : ty]] :=
 	  	Const{id} -> s, 
 	  	Const{id} |-> d,
-	  	Funcs{id} -> s,
-	  	Funcs{id} |-> z,
 	  	d : ty.
 	
   	[[ TypeConstIdentifier(id) ^ (s) : ty]] :=
@@ -212,14 +202,10 @@ rules
   	[[ a@ArgIdentifier(id) ^ (s) : ty ]] := 
 	    Const{id} <- s,
 	    Const{id} : ty,
-	    Funcs{id} <- s,
-	    Funcs{id} : None(),
 	    Const{id}.origin := a.
 	    
   	[[ a@TypedArgIdentifier(id, typ) ^ (s) : ty ]] := 
   		[[ typ ^ (s) : ty ]],
-	    Funcs{id} <- s,
-	    Funcs{id} : None(),
 	  	Const{id} <- s,
 	  	Const{id} : ty,
 	  	Const{id}.origin := a.
