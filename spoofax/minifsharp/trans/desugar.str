@@ -46,6 +46,10 @@ constructors
 	
 	EmptyList					: List
 	EmptyPatternList            : PatternList
+	
+	// Argument
+	
+	Argument					: Identifier * Option(OuterType)-> Argument
 
 rules
 
@@ -103,3 +107,9 @@ rules
 	desugar: NestedTypeTuple(RawTypeTuple(a,b)) 			-> TypeTuple(<concat> [[a], b])
 	desugar: OuterExpTuple(RawExpTuple(a,b)) 				-> ExpTuple(<concat> [[a], b])
 	desugar: NestedExpTuple(RawExpTuple(a,b)) 				-> ExpTuple(<concat> [[a], b])
+
+	// Arguments
+	
+	desugar: ArgIdentifier(name) 							-> Argument(name, None())
+	desugar: TypedArgIdentifier(name, ty) 					-> Argument(name, Some(ty))
+	

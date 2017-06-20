@@ -199,12 +199,12 @@ rules
 	  	Const{id} |-> d,
 	  	d : ty.
   
-  	[[ a@ArgIdentifier(id) ^ (s) : ty ]] := 
+  	[[ a@Argument(id, None()) ^ (s) : ty ]] := 
 	    Const{id} <- s,
 	    Const{id} : ty,
 	    Const{id}.origin := a.
 	    
-  	[[ a@TypedArgIdentifier(id, typ) ^ (s) : ty ]] := 
+  	[[ a@Argument(id, Some(typ)) ^ (s) : ty ]] := 
   		[[ typ ^ (s) : ty ]],
 	  	Const{id} <- s,
 	  	Const{id} : ty,

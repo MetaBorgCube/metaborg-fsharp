@@ -68,7 +68,7 @@ rules
 		
 	loadFunction: (a@Identifier(name), context) -> result with
 		targetFunc   := <getOrigin> a;
-		freeVars     := <getFreeVars> ([], targetFunc);
+		freeVars     := <getFreeVars> targetFunc;
 		loadFreeVars := <mapconcat(\x->(x, context)\;program-to-cil)> freeVars;
 		freeVarTys   := <map(nabl2-get-ast-type)> freeVars;
 		callCtor     := [NewObj(ClassType(DefaultModule(), ClassName(<concat-strings>["Test1/", name, "_0"]), NonGeneric()), <map(type-to-cil)> freeVarTys)];
@@ -91,8 +91,7 @@ rules
 	type-to-cil: TVar(x)       -> <concat-strings> ["!!", x]
 	
 	arg-type-to-cil: (Forall(_,x), argName, args)                                  -> <arg-type-to-cil> (x, argName, args)
-	arg-type-to-cil: (Function(x,y), argName, [ArgIdentifier(argName) | _])        -> <type-to-cil> x
-	arg-type-to-cil: (Function(x,y), argName, [TypedArgIdentifier(argName,_) | _]) -> <type-to-cil> x
+	arg-type-to-cil: (Function(x,y), argName, [Argument(argName, _) | _])          -> <type-to-cil> x
 	arg-type-to-cil: (Function(x,y), argName, [_ | argTl])                         -> <arg-type-to-cil> (y, argName, argTl)
 	
 	ret-type-to-cil: Function(x,y) -> <type-to-cil> y
@@ -165,7 +164,7 @@ rules
 
 	// returns index of the identifier in the sequence [param1, ..., paramn, freeVar1, ..., freeVarn] 
 	getArg: (identifier, func) -> result with
-		freeVars   := <getFreeVars> ([], func);
+		freeVars   := <getFreeVars> func;
 		freeVarIdx := <getIdentifierIndex> (freeVars, identifier);
 		paramIndex := <getIdentifierIndex> (<getLetArgs>func, identifier);
 		numParams  := <getLetArgs;length> func;
@@ -176,7 +175,7 @@ rules
 		returnType 	 := <ret-type-to-cil> tmp;
 		argTypes 	 := <map(\x -> <arg-type-to-cil> (tmp, <getIdentifierName> x, args)\)> args;
 		genericTypes := <getOptionalGenericVars> tmp;
-		freeVars 	 := <getFreeVars> ([], a);
+		freeVars 	 := <getFreeVars> a;
 		freeVarTypes := <map(nabl2-get-ast-type; strip-forall; type-to-cil)> freeVars;
 		allArgTypes  := <concat>  [argTypes, freeVarTypes];
 		wildcardVars := <getNamedWildcars;map(nabl2-get-ast-type; strip-forall; type-to-cil)> body; 
@@ -187,8 +186,7 @@ rules
 
 
  
-	getIdentifierName: ArgIdentifier(x)         -> x
-	getIdentifierName: TypedArgIdentifier(x, _) -> x
+	getIdentifierName: Argument(x, _)	        -> x
 	getIdentifierName: Identifier(x)            -> x
 	getIdentifierName: Let(_, name, _, _, _)    -> name // required for getExprBlockArgs (bit of a dirty hack..)
 	getIdentifierName: LetConst(name, _, _)     -> name // required for getExprBlockArgs
@@ -280,36 +278,18 @@ rules
 		result := Ctor(all_params, body)
 
 	
-
-
-	
-	
-	
 	listifyExprBlock: ExprBlock(exp, Some(next)) -> <concat> [[exp], <listifyExprBlock> next]
 	listifyExprBlock: ExprBlock(exp, None()) -> [exp]
 	
 	
-	
-	getFreeVars: (scope, None())                    -> [] 
-	getFreeVars: (scope, Some(x))                   -> <getFreeVars> (scope, x)
-	getFreeVars: (scope, BinaryOperation(op, a, b)) -> <concat> [<getFreeVars> (scope, a), <getFreeVars> (scope, b)]
-	getFreeVars: (scope, Concat(a, b))              -> <concat> [<getFreeVars> (scope, a), <getFreeVars> (scope, b)]
-	getFreeVars: (scope, Application(a,b)) 			-> <concat> [<getFreeVars> (scope, a), <getFreeVars> (scope, b)]
-	getFreeVars: (scope, Const(_))                  -> []
-	getFreeVars: (scope, Match(_,_)) 				-> [] // TODO
-	getFreeVars: (scope, x@Identifier(_), func@Let(_,_,_,_,_)) -> <getFreeVars> (scope, func)
-	getFreeVars: (scope, x@Identifier(_), _) 		-> <getFreeVar> (scope, x)
-	getFreeVars: (scope, x@Identifier(name)) -> result with 
-		targetFunc := <getOrigin> x;
-		result     := <getFreeVars> (scope, x, targetFunc)
-	getFreeVars: (scope, ExprBlock(exp, tail)) -> result with  
-		args       := <getExprBlockArgs> (scope, exp);
-		result     := <concat> [<getFreeVars> (scope, exp), <getFreeVars> (<concat> [scope, args], tail)]
-	getFreeVars: (scope, Let(_,name,args,retTy,body)) -> result with
-		newscope   := <concat> [args, scope];
-		result     := <getFreeVars> (newscope, body)
-	
-	
+	// get free vars: identifiers that resolve to arguments that are not defined within this function or its nested functions
+	getFreeVars: func -> result with 
+		allIdentifiers 		   := <collect-all(?Identifier(_))> func;
+		allArguments 		   := <collect-all(?Argument(_,_))> func;
+		identifiersToArguments := <remove-all(\x -> <getOrigin; not(?Argument(_,_))> x\)> allIdentifiers;         // remove all identifiers that do not resolve to args (e.g. that resolve to funcs)
+		allFreeVars 		   := <remove-all(\x -> <elem> (<getOrigin>x, allArguments)\)> identifiersToArguments;    // remove all that resolve to an argument within the scope of this func
+		result                 := <zip; foldr(![], union(\((_,a) ,(_,b)) -> <eq> (a,b) \), ![<id>]); map(\(x,y) -> x\)> (allFreeVars, <map(getOrigin)> allFreeVars) // remove duplicate references to the same var
+		
 
 	getExprBlockArgs: (scope, l@Let(_,_, _, _, _)) -> [l]
 	getExprBlockArgs: (scope, l@LetConst(_, _, _)) -> [l]
@@ -337,9 +317,4 @@ rules
 		varOrigins := <map(getWeakOrigin)> vars;
 		varOrigin  := <getOrigin> var;
 		result 	   := <indexOf> (varOrigins, varOrigin, 0)
-		
-	getFreeVar: (vars, var) -> result with 
-		varOrigin := <getOrigin> var;
-		if <elem> (varOrigin, vars) then result := [] else result := [var] end
- 
-		
+
