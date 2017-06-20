@@ -71,11 +71,11 @@ context-free syntax
 }
 >
 
-GenericTypeIndicator.GenericTypeIndicator = <\<<{LiberalString ","}+>\>>
+GenericTypeIndicator.GenericTypeIndicator = <\<<{Typ ","}+>\>>
 
 
 Function.Method = <
-.method public static specialname default <LiberalString> get_<Name> <GenericTypeIndicator?> ( <{LiberalString ","}*> )  cil managed 
+.method public static specialname default <Typ> get_<Name> <GenericTypeIndicator?> ( <{Typ ","}*> )  cil managed 
 {
 	.custom instance void class [mscorlib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::'.ctor'() =  (01 00 00 00 )
 	.maxstack 1024
@@ -86,14 +86,14 @@ Function.Method = <
 >
 
 Function.FunctionDefinition = <
-.class nested assembly auto ansi serializable beforefieldinit <Name> <GenericTypeIndicator?> extends <Type>
+.class nested assembly auto ansi serializable beforefieldinit <Name> <GenericTypeIndicator?> extends <Typ>
 {
 
   <{Field "\n"}*> 
 
   <Ctor>
 
-  .method public virtual strict instance default <Type> Invoke (<Type> x)  cil managed 
+  .method public virtual strict instance default <Typ> Invoke (<Typ> x)  cil managed 
   {
     .maxstack 1024
     <{Instruction "\n"}*>
@@ -104,10 +104,10 @@ Function.FunctionDefinition = <
 
 
 LocalDefs.LocalDefs = <.locals init (
-	<{Type ","}*>
+	<{Typ ","}*>
 )>
 
-Field.Field = <.field  public  <Type> <Name>>
+Field.Field = <.field  public  <Typ> <Name>>
 
 Param.Param = <<String> <String>>
 
@@ -126,17 +126,35 @@ Ctor.DefaultCtor = <.method assembly specialname rtspecialname instance default 
 CallType.Static = <>
 CallType.Instance = <instance>
 
+//class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2<"
+
+
+Typ.ClassType = <class <Module><ClassName><GenericClassTypeArgs>>
+Typ.ArgType2 = <!!<Int>>
+Typ.ArgType1 = <!<Int>>
+ 
+Typ.IntType = <int32>
+Typ.BoolType = <bool>
+Typ.StringType = <string>
+
+ClassName.ClassName = <<LiberalString>>
+
+Module.Module = <[<LiberalString>]>
+Module.DefaultModule = <>
+GenericClassTypeArgs.GenericClassTypeArgs = <`<Int>\<<{Typ ","}+>\>>
+GenericClassTypeArgs.NonGeneric = <>
+
 Instruction.LoadArg = <ldarg.<Int>>
 Instruction.LoadLocal = <ldloc.<Int>>
 Instruction.StoreLocal = <stloc.<Int>>
-Instruction.StoreField = <stfld <Type> Test1/<Name>::<Name>>
-Instruction.LoadField = <ldfld <Type> Test1/<Name>::<Name>>
-Instruction.NewObj = <newobj instance void <LiberalString>::'.ctor'( <{Type ","}*> )>
-Instruction.Call = <call <CallType> <LiberalString> <LiberalString>::<Name><GenericTypeIndicator?>( <{LiberalString ","}*> )>
+Instruction.StoreField = <stfld <Typ> Test1/<Name>::<Name>>
+Instruction.LoadField = <ldfld <Typ> Test1/<Name>::<Name>>
+Instruction.NewObj = <newobj instance void <Typ>::'.ctor'( <{Typ ","}*> )>
+Instruction.Call = <call <CallType> <Typ> <Typ>::<Name><GenericTypeIndicator?>( <{Typ ","}*> )>
 Instruction.LoadString = <ldstr "<LiberalString>">
 Instruction.Throw = <throw>
-Instruction.CallVirt = <callvirt instance !1 <Type>::Invoke(!0)>
-Instruction.CallConstructor = <call instance void <LiberalString>::'.ctor'()>
+Instruction.CallVirt = <callvirt instance !1 <Typ>::Invoke(!0)>
+Instruction.CallConstructor = <call instance void <Typ>::'.ctor'()>
 Instruction.Ldc = <ldc.i4 <Int>>
 Instruction.Mul = <mul>
 Instruction.Add = <add>
