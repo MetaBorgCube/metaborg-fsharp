@@ -78,8 +78,22 @@ rules
 	program-to-cil: (z@Application(a,b), context) -> result with
 		funTy  := <nabl2-get-ast-type;strip-forall> a;
 		result :=  <concat> [<program-to-cil> (a, context), <program-to-cil> (b, context), [CallVirt(<type-to-cil> funTy)]]
-	
 
+// Let Const
+		
+	loadLetConst: (a@Identifier(name), context) -> result with
+		targetFunc   := <getOrigin> a;
+		constTy		 := <nabl2-get-ast-type;strip-forall> a;
+		freeVars     := <getFreeVars> targetFunc;
+		loadFreeVars := <mapconcat(\x->(x, context)\;program-to-cil)> freeVars;
+		freeVarTys   := <map(nabl2-get-ast-type; ret-type-to-cil)> freeVars;
+		constName    := <concat-strings> ["get_", name];
+		call		 := [Call(Static(), <ret-type-to-cil> constTy, ClassType(DefaultModule(), ClassName("Test1"), NonGeneric()), constName, None(), freeVarTys)] ;
+		result       := <concat> [
+			loadFreeVars,
+			call
+	 	]
+ 
 // Type related stuff	
 	
 	type-to-cil: Forall(_, y)  -> <type-to-cil> y
@@ -127,7 +141,8 @@ rules
 	program-to-cil: (v@Identifier(name), context) -> <getVar> (v, context)
 		
 	program-to-cil: (Let(_,_,_,_,_), context) -> [] // functions are compiled elsewhere; don't try to compile them into other function bodies
-		
+	program-to-cil: (LetConst(_,_,_), context) -> []
+	
 	program-to-cil: (c@ExpTuple(l), context) -> result with
 		items    := <mapconcat(\x -> <program-to-cil> (x, context)\)> l;
 		paramTys := <length; range; map(\x -> ArgType1(<int-to-string>x)\)> l;
@@ -148,17 +163,23 @@ rules
 		
 		
 	getLetArgs: Let   (_,_, args, _, _) -> args
-
+	getLetArgs: LetConst   (_,_,_) -> []
 
 	getVar: (identifier, context@(func, wildcardDefs)) -> result with
+		<debug1> identifier;
+		<getOrigin; debug2> identifier;
 		if <getOrigin; ?Let(_,_,_,_,_)> identifier then
 			result := <loadFunction> (identifier, context)
 		else
-			wildcardIdx := <getIdentifierIndex> (wildcardDefs, identifier);
-			if <lt> (wildcardIdx, 0) then 
-				result := [LoadArg(<getArg;int-to-string> (identifier, func))]
-			else 
-				result := [LoadLocal(<int-to-string> wildcardIdx)] 
+			if <getOrigin; ?LetConst(_,_,_)> identifier then
+				result := <loadLetConst> (identifier, context)
+			else
+				wildcardIdx := <debug3; getIdentifierIndex; debug4> (wildcardDefs, identifier);
+				if <lt> (wildcardIdx, 0) then 
+					result := [LoadArg(<getArg;int-to-string> (identifier, func))]
+				else 
+					result := [LoadLocal(<int-to-string> wildcardIdx)] 
+				end
 			end
 		end
 
@@ -182,6 +203,18 @@ rules
 		method 		 := Method(returnType, name, genericTypes, allArgTypes, LocalDefs(wildcardVars), <program-to-cil> (body, (a, [])));
 		curriedFunc  := <curriedFunction-to-cil> (tmp, tmp, name, [], args, freeVars);
 		result 	 	 := <concat> [[method], curriedFunc, <listifyExprBlock;mapconcat(let-to-cil)> body]
+		
+	let-to-cil: a @ LetConst(name,retTy,body) ->  result with 
+		tmp 	   	 := <nabl2-get-ast-type; strip-forall> a;
+		returnType 	 := <ret-type-to-cil> tmp;
+		genericTypes := <getOptionalGenericVars> tmp;
+		freeVars 	 := <getFreeVars> a;
+		freeVarTypes := <map(nabl2-get-ast-type; strip-forall; type-to-cil)> freeVars;
+		wildcardVars := <getNamedWildcars;map(nabl2-get-ast-type; strip-forall; type-to-cil)> body; 
+		method 		 := Method(returnType, name, genericTypes, freeVarTypes, LocalDefs(wildcardVars), <program-to-cil> (body, (a, [])));
+		curriedFunc  := <curriedFunction-to-cil> (tmp, tmp, name, [], [], freeVars);
+		result 	 	 := <concat> [[method], curriedFunc, <listifyExprBlock;mapconcat(let-to-cil)> body]
+		
 	let-to-cil: _ -> []
 
 

@@ -95,7 +95,7 @@ rules
 		Const{id} : argCurried2,
 	    InnerExprBlock[[ body ^ (s_body) : retTyp]].
     
-  	[[ LetConst(id, retTy, body) ^ (s) : ty ]] := 
+  	[[ a@LetConst(id, retTy, body) ^ (s) : ty ]] := 
 		GetSpecifiedRetTy [[ retTy ^ (s) : ty ]],
 		new s_body, 
 		s_body -P-> s,
