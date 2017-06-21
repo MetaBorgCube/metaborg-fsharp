@@ -40,52 +40,64 @@ rules
   	[[ Program(expBlock, main) ^ (s) ]] :=
 		new mainscope,
   		ProgramExp [[ expBlock ^ (s, mainscope) : ty]],
-  		[[ main ^ (mainscope) : ty2]],
+		new mainscope',
+    	mainscope' -P-> mainscope,
+  		[[ main ^ (mainscope, mainscope') : ty2]],
   		true.
 
   	ProgramExp[[ Some(block @ ExprBlock(_, _)) ^ (s, mainscope) : ty ]] :=
-  		OuterExprBlock[[ block ^ (s, mainscope) : ty]].
+  		OuterExprBlock[[ block ^ (s, _, mainscope) : ty]].
   	
   	ProgramExp[[ None() ^ (s, mainscope) : ty ]] :=
-    	mainscope -P-> s,
-    	true.
+    	mainscope -P-> s.
 	
 	// Expression Block Rules
-	
-  	OuterExprBlock[[ ExprBlock(exp, None()) ^ (s, mainscope) : ty]] := 
-		[[ exp ^ (s) : ty ]],
-		mainscope -P-> s.
-	
-  	OuterExprBlock[[ ExprBlock(exp, Some(next)) ^ (s, mainscope) : ty]] := 
-		[[ exp ^ (s) : ty1 ]],
+
+	OuterExprBlock[[ a@ExprBlock(exp, None()) ^ (s, _, mainscope) : ty]] := 
 		new s',
 		s' -P-> s,
-		OuterExprBlock[[ next ^ (s', mainscope) : ty ]].
+		ExprBlock2 [[ a ^ (s, s', _) : ty ]],
+		mainscope -P-> s'.
 	
-  	InnerExprBlock[[ ExprBlock(exp, None()) ^ (s) : ty]] := 
-		[[ exp ^ (s) : ty ]].
-	
-  	InnerExprBlock[[ ExprBlock(exp, Some(next)) ^ (s) : ty]] := 
-		[[ exp ^ (s) : ty1 ]],
+  	OuterExprBlock[[ a@ExprBlock(exp, Some(next)) ^ (s, _, mainscope) : ty]] := 
 		new s',
 		s' -P-> s,
-		InnerExprBlock[[ next ^ (s') : ty ]].
+		ExprBlock2 [[ a ^ (s, s', _) : ty ]],
+		OuterExprBlock[[ next ^ (s', _, mainscope) : ty ]].
+	
+  	InnerExprBlock[[ a@ExprBlock(exp, None()) ^ (s, _, _) : ty]] := 
+		new s',
+		s' -P-> s,
+		ExprBlock2 [[ a ^ (s, s', _) : ty ]].
+	
+  	InnerExprBlock[[ a@ExprBlock(exp, Some(next)) ^ (s, _, _) : ty]] := 
+		new s',
+		s' -P-> s,
+		ExprBlock2 [[ a ^ (s, s', _) : ty ]],
+		InnerExprBlock[[ next ^ (s', _, _) : ty ]].
+
+	ExprBlock2[[ ExprBlock(a@Let(_, _, _, _, _), _) ^ (s, s', _) : ty ]] :=
+		[[ a ^ (s, s') : ty ]].
+	ExprBlock2[[ ExprBlock(a@LetConst(_, _, _), _) ^ (s, s', _) : ty ]] :=
+		[[ a ^ (s, s') : ty ]].
+	ExprBlock2[[ ExprBlock(a, _) ^ (s, s', _) : ty ]] :=
+		[[ a ^ (s) : ty ]].
 
 	// Let Rules
 
-  	[[ a@Let(NonRecursive(), id, args, retId, body) ^ (s) : argCurried2 ]] := 
-		GetSpecifiedRetTy [[ retId ^ (s) : retTyp ]],
+  	[[ a@Let(NonRecursive(), id, args, retId, body) ^ (s, s') : argCurried2 ]] := 
+		GetSpecifiedRetTy [[ retId ^ (s_body) : retTyp ]],
 		new s_body, 
 		s_body -P-> s,
-	    InnerExprBlock[[ body ^ (s_body) : retTyp]],
+	    InnerExprBlock[[ body ^ (s_body, _, _) : retTyp]],
 		MapCurry [[ args ^ (s_body, retTyp) : argCurried ]],
 		argCurried2 genOf(vars) argCurried,
 		Const{id}.origin := a, 
-		Const{id} <- s,
+		Const{id} <- s',
 		Const{id} : argCurried2.
 	  
-  	[[ a@Let(Recursive(), id, args, retId, body) ^ (s) : argCurried2 ]] := 
-    	GetSpecifiedRetTy [[ retId ^ (s) : retTyp ]],
+  	[[ a@Let(Recursive(), id, args, retId, body) ^ (s, _) : argCurried2 ]] := 
+    	GetSpecifiedRetTy [[ retId ^ (s_body) : retTyp ]],
 		MapCurry [[ args ^ (s_body, retTyp) : argCurried ]],
 		argCurried2 genOf(vars) argCurried,
 		new s_body, 
@@ -93,16 +105,16 @@ rules
 		Const{id}.origin := a, 
 		Const{id} <- s,
 		Const{id} : argCurried2,
-	    InnerExprBlock[[ body ^ (s_body) : retTyp]].
+	    InnerExprBlock[[ body ^ (s_body, _, _) : retTyp]].
     
-  	[[ a@LetConst(id, retTy, body) ^ (s) : ty ]] := 
-		GetSpecifiedRetTy [[ retTy ^ (s) : ty ]],
+  	[[ a@LetConst(id, retTy, body) ^ (s, s') : ty ]] := 
+		GetSpecifiedRetTy [[ retTy ^ (s_body) : ty ]],
 		new s_body, 
 		s_body -P-> s,
 		Const{id}.origin := a, 
-		Const{id} <- s,
+		Const{id} <- s',
 		Const{id} : ty,
-	    InnerExprBlock[[ body ^ (s_body) : ty]].
+	    InnerExprBlock[[ body ^ (s_body, _, _) : ty]].
     
     // Match Rules
     
