@@ -103,6 +103,40 @@ Function.FunctionDefinition = <
 >
 
 
+Function.UnionClass = <
+.class nested assembly auto ansi serializable beforefieldinit <Name> <GenericTypeIndicator?>
+{
+
+  <{Field "\n"}*> 
+
+  <Ctor>
+
+  .method public virtual strict instance default bool EqualTypes (<Typ> x)  cil managed 
+  {
+    .maxstack 1024
+    <{Instruction "\n"}*>
+    ret 
+  }
+}
+>
+
+Function.UnionSubtypeClass = <
+.class nested assembly auto ansi serializable beforefieldinit <Name> <GenericTypeIndicator?> extends <Typ>
+{
+
+  <{Field "\n"}*> 
+
+  <Ctor>
+
+  .method public static strict default int32 GetTag ()  cil managed 
+  {
+    .maxstack 1024
+    <{Instruction "\n"}*>
+    ret 
+  }
+}
+>
+
 LocalDefs.LocalDefs = <.locals init (
 	<{Typ ","}*>
 )>
@@ -144,11 +178,12 @@ Module.DefaultModule = <>
 GenericClassTypeArgs.GenericClassTypeArgs = <`<Int>\<<{Typ ","}+>\>>
 GenericClassTypeArgs.NonGeneric = <>
 
+Instruction.CastClass = <castclass <Typ>>
 Instruction.LoadArg = <ldarg.<Int>>
 Instruction.LoadLocal = <ldloc.<Int>>
 Instruction.StoreLocal = <stloc.<Int>>
-Instruction.StoreField = <stfld <Typ> Test1/<Name>::<Name>>
-Instruction.LoadField = <ldfld <Typ> Test1/<Name>::<Name>>
+Instruction.StoreField = <stfld <Typ> <Typ>::<Name>>
+Instruction.LoadField = <ldfld <Typ> <Typ>::<Name>>
 Instruction.NewObj = <newobj instance void <Typ>::'.ctor'( <{Typ ","}*> )>
 Instruction.Call = <call <CallType> <Typ> <Typ>::<Name><GenericTypeIndicator?>( <{Typ ","}*> )>
 Instruction.LoadString = <ldstr "<LiberalString>">
@@ -172,6 +207,7 @@ Instruction.Br = <br <LabelRef>>
 Instruction.Bne = <bne.un <LabelRef>>
 Instruction.Bgt = <bgt.un <LabelRef>>
 Instruction.Blt = <blt.un <LabelRef>>
+Instruction.Beq = <beq <LabelRef>>
 Instruction.BrFalse = <brfalse <LabelRef>>
 Instruction.Label = <<String>: >
 

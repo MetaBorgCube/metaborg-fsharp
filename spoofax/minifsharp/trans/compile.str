@@ -56,6 +56,13 @@ rules
 	
 	// first application: a is an identifier, hence need to call constructor with free vars as parameters
 	program-to-cil: (z@Application(a@Identifier(name),b), context) -> result with
+		if <getOrigin; ?Let(_,_,_,_,_)> a then
+			result := <functionApplication-to-cil>(z, context)
+		else
+			result := <typeConstructorApplication-to-cil>(z, context)
+		end
+		
+	functionApplication-to-cil: (z@Application(a@Identifier(name),b), context) -> result with
 		funTy 	 	 := <nabl2-get-ast-type;strip-forall> a;
 		loadFunc 	 := <loadFunction> (a, context);
 		loadArg      := <program-to-cil> (b, context);
@@ -64,6 +71,15 @@ rules
 			loadFunc, 
 			loadArg, 
 			invokeFunc
+		]
+		
+	typeConstructorApplication-to-cil: (z@Application(a@Identifier(name),b), context) -> result with
+		ty 	 	 	:= <nabl2-get-ast-type;type-to-cil> b;
+		loadArg      := <program-to-cil> (b, context);
+		newObj 		 := [NewObj(ClassType(DefaultModule(), ClassName(<concat-strings> ["Test1/", name]), NonGeneric()), [ty])];
+		result       := <concat>[
+			loadArg,
+			newObj
 		]
 		
 	loadFunction: (a@Identifier(name), context) -> result with
@@ -102,6 +118,7 @@ rules
 	type-to-cil: Bool()        -> BoolType()
 	type-to-cil: Tuple(x)      -> ClassType(Module("mscorlib"), ClassName("System.Tuple"), GenericClassTypeArgs(<length;int-to-string> x, <map(type-to-cil)> x))
 	type-to-cil: List(x)       -> ClassType(Module("FSharp.Core"), ClassName("Microsoft.FSharp.Collections.FSharpList"), GenericClassTypeArgs("1", [<type-to-cil> x]))
+	type-to-cil: UnionType(x)  -> ClassType(DefaultModule(), ClassName(<concat-strings> ["Test1/", x]), NonGeneric())
 	type-to-cil: TVar(x)       -> <concat-strings> ["!!", x]
 	
 	arg-type-to-cil: (Forall(_,x), argName, args)                                  -> <arg-type-to-cil> (x, argName, args)
@@ -166,7 +183,7 @@ rules
 	getLetArgs: LetConst   (_,_,_) -> []
 
 	getVar: (identifier, context@(func, wildcardDefs)) -> result with
-		<debug1> identifier;
+		<debug(|"line186 ")> identifier;
 		<getOrigin; debug2> identifier;
 		if <getOrigin; ?Let(_,_,_,_,_)> identifier then
 			result := <loadFunction> (identifier, context)
@@ -174,7 +191,7 @@ rules
 			if <getOrigin; ?LetConst(_,_,_)> identifier then
 				result := <loadLetConst> (identifier, context)
 			else
-				wildcardIdx := <debug3; getIdentifierIndex; debug4> (wildcardDefs, identifier);
+				wildcardIdx := < getIdentifierIndex; debug4> (wildcardDefs, identifier);
 				if <lt> (wildcardIdx, 0) then 
 					result := [LoadArg(<getArg;int-to-string> (identifier, func))]
 				else 
@@ -214,7 +231,48 @@ rules
 		method 		 := Method(returnType, name, genericTypes, freeVarTypes, LocalDefs(wildcardVars), <program-to-cil> (body, (a, [])));
 		curriedFunc  := <curriedFunction-to-cil> (tmp, tmp, name, [], [], freeVars);
 		result 	 	 := <concat> [[method], curriedFunc, <listifyExprBlock;mapconcat(let-to-cil)> body]
-		
+
+		// Generate for e.g. type Q = A of int | B of bool
+	// - class Q {int tag; abstract bool cmp(Q other);}
+	// - class A : Q { int x; public A(int x){tag = 0; this.x = x;} public bool cmp(Q other){return tagsEq && ((A)other).x == this.x;}}
+	// - class B : Q { bool x; public B(bool x){tag = 1; this.x = x;}  public bool cmp(Q other){return tagsEq && ((B)other).x == this.x;}}
+	let-to-cil: TypeDefinition(name, Union(l)) -> result with 
+	lbl1 := <newname> "lbl1_";
+		classTy := ClassType(DefaultModule(), ClassName(<concat-strings> ["Test1/", name]), NonGeneric());
+		typeCmp := [
+			LoadArg("0"),
+			LoadField(IntType(), classTy, "Tag"),
+			LoadArg("1"),
+			Beq(LabelRef(lbl1)),
+			Ldc("0"),
+			Ret(),
+			Label(lbl1),
+			Ldc("1"),
+			Ret()
+		];
+		topClass := UnionClass(name, None(), [Field(IntType(), "Tag")], DefaultCtor(), IntType(), typeCmp);
+		q := <number(id); mapconcat(\(typedId, idx) -> <subclass-to-cil> (typedId, idx, classTy)\)> l;
+		result := <concat>[[topClass], q]
+	
+	subclass-to-cil: z@(a@TypedID(name, ty), idx, parent) -> result with 
+		ty2 := < nabl2-get-ast-type; type-to-cil> ty;
+		varTyCil := ClassType(DefaultModule(), ClassName(<concat-strings> ["Test1/", name]), NonGeneric());
+		ctorBody := <concat>[
+			<generateBaseInit> parent,
+			<generateFieldInit; debug(|"line313-2 ")> ("1", <concat-strings> ["Test1/", name], [Param(ty2, "Value")]),
+			
+			[LoadArg("0"), Ldc(<int-to-string> idx), StoreField(IntType(), parent, "Tag")]			
+		];
+		ctor := Ctor([Param(ty2, "x")], ctorBody);
+		cmpBody := [
+			Ldc(<int-to-string> idx)
+		];
+		class := UnionSubtypeClass(name, None(), parent, [Field(ty2, "Value")], ctor, cmpBody);
+//q:=<debug(|"line269 ")> z;
+		result := [class]
+	 
+
+	
 	let-to-cil: _ -> []
 
 
@@ -244,7 +302,7 @@ rules
 		
 	loadArg: (processed, funTy, className, identifierName) -> result with 
 		fldType := <arg-type-to-cil> (funTy,identifierName, processed);
-		result  := [LoadArg("0"), LoadField(fldType, className, identifierName)] 
+		result  := [LoadArg("0"), LoadField(fldType, <localClass>className, identifierName)] 
 	loadArgs: (processed, funTy, className) -> <mapconcat(\x -> <loadArg> (processed, funTy, className, <getIdentifierName> x)\)> processed
 
 	getFreeVarName: x -> <concat-strings> ["freevar_", x]
@@ -252,7 +310,7 @@ rules
 	loadFreeVar: (className, freeVar) -> result with
 		ty        := <nabl2-get-ast-type; type-to-cil> freeVar;
 		fieldName := <getIdentifierName;getFreeVarName> freeVar;
-		result    := [LoadArg("0"), LoadField(ty, className, fieldName)]
+		result    := [LoadArg("0"), LoadField(ty, <localClass>className, fieldName)]
 	loadFreeVars: (className, freeVars) -> <mapconcat(\x -> (className, x)\; loadFreeVar)> freeVars
 	
 	getCurrentArgs: (processed, [])      -> processed
@@ -288,7 +346,7 @@ rules
 		[
 			LoadArg("0"),
 			LoadArg(idx),
-			StoreField(ty, className, name)
+			StoreField(ty, <localClass>className, name)
 		],
 		<generateFieldInit> (<addS>(idx, "1"), className, tl)
 		]
@@ -350,4 +408,6 @@ rules
 		varOrigins := <map(getWeakOrigin)> vars;
 		varOrigin  := <getOrigin> var;
 		result 	   := <indexOf> (varOrigins, varOrigin, 0)
+		
+	localClass: name -> ClassType(DefaultModule(), ClassName(name), NonGeneric())
 

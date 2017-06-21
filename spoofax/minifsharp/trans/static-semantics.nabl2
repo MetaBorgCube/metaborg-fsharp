@@ -137,7 +137,7 @@ rules
 		Const{id} -> s, 
 	  	Const{id} |-> d,
 	  	d : constructTy,
-	    ty2 instOf ty,
+	    ty2 instOf constructTy,
 	    Pattern [[ arg ^ (s) : argTy ]],
 	    ty2 == Function(argTy, funcRetTy).
 	    
@@ -154,15 +154,15 @@ rules
     
     // Union types
     
-    [[ TypeDefinition(id, TypeEscaped(a, alist)) ^ (s) : UnionType(id) ]] :=
-    	TypeEscaped [[ a ^ (s) : UnionType(id) ]],
+    [[ TypeDefinition(id, Union(alist)) ^ (s) : UnionType(id) ]] :=
     	Map1UT(TypeEscaped) [[ alist ^ (s) : UnionType(id) ]],
 		Const{id} <- s,
 		Const{id} : UnionType(id).
     	
-    TypeEscaped [[ TypedID(id, type) ^ (s) : unionTy ]] :=
+    TypeEscaped [[ a@TypedID(id, type) ^ (s) : unionTy ]] :=
     	[[ type ^ (s) : ty ]],
 		Const{id} <- s,
+		Const{id}.origin := a,
 		Const{id} : Function(ty, unionTy).
 		
     TypeEscaped [[ TypeConstIdentifier(id) ^ (s) : unionTy ]] :=

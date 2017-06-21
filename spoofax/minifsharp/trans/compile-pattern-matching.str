@@ -83,6 +83,33 @@ rules
 			elemComparisons,
 			[Label(end)]]
 	
+	ruleComparison-to-cil: (ty@UnionType(x), lhs@TypeConstruct(subtype, pat), endOfRule, context@(func,wildcards)) -> result with
+		begin           :=  <newname>"unionMatch_begin_";
+		end             := <newname>"unionMatch_end_";
+		noMatch         := <newname> "unionMatch_nomatch_";
+		match           := <newname> "unionMatch_match_";
+		// check whether  lhs is of same subtype
+		baseTy := ClassType(DefaultModule(), ClassName(<concat-strings> ["Test1/", x]), NonGeneric());
+		subClass := ClassType(DefaultModule(), ClassName(<concat-strings> ["Test1/", subtype]), NonGeneric());
+		valTy := <nabl2-get-ast-type;type-to-cil> pat;
+		q := [
+			Dup(),
+			Call(Static(), IntType(), subClass, "GetTag", None(), []),
+			Call(Instance(), BoolType(), baseTy, "EqualTypes", None(), [IntType()]),
+			BrFalse(LabelRef(endOfRule)),
+			// now on stack: Q (1,true)
+			Dup(),
+			LoadField(valTy, subClass, "Value")
+		];
+		comparison :=  <ruleComparison-to-cil> (<nabl2-get-ast-type;debugp>pat, pat, noMatch, context); 
+		result := <concat>[
+			q, 
+			comparison,
+			[Pop(), Br(LabelRef(match)), // Pop the Union class 
+			Label(noMatch), Pop(), Br(LabelRef(endOfRule)), Label(match)] // pop the value within the union
+			]
+		
+	
 	
 	// Caller pushes complete tuple on stack. This function always leaves the tuple on stack, regardless of whether or not it matches
 	compareTupleElem: (elemTy, lhsElem, idx, tupleTy, lhs, endOfRule, context) ->  result with

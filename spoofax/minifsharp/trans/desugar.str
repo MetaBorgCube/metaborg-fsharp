@@ -50,6 +50,10 @@ constructors
 	// Argument
 	
 	Argument					: Identifier * Option(OuterType)-> Argument
+	
+	// Type
+	
+	Union 						: List(TypedID) -> TypeDefinition
 
 rules
 
@@ -112,4 +116,10 @@ rules
 	
 	desugar: ArgIdentifier(name) 							-> Argument(name, None())
 	desugar: TypedArgIdentifier(name, ty) 					-> Argument(name, Some(ty))
+	
+	// Types
+	
+	desugar: TypeEscaped(x,y) -> <desugar>Type(x,y)
+	desugar: Type(x,y) -> Union(<concat> [[x], y])
+	
 	
