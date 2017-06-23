@@ -5,5 +5,5 @@ menus
   menu: "Generation" (openeditor)
     
     action: "Generate CIL (.cil file)"      	= show-cil
-    action: "Generate EXE (.exe file)"      	= generate-cil
-    action: "Generate EXE (.exe file) and run"  = run-cil
+    action: "Generate EXE (.exe file)"      	= generate-exe
+    action: "Generate EXE (.exe file) and run"  = run-exe

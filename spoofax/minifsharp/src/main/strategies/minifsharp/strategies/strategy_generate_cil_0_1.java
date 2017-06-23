@@ -5,6 +5,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.net.URI;
+import java.nio.file.Paths;
 
 import org.spoofax.interpreter.terms.IStrategoString;
 import org.spoofax.interpreter.terms.IStrategoTerm;
@@ -14,7 +16,7 @@ import org.strategoxt.lang.Strategy;
 
 public class strategy_generate_cil_0_1 extends Strategy {
     public static strategy_generate_cil_0_1 instance = new strategy_generate_cil_0_1();
-	private final String PROJECT_DIRECTORY = "C:\\Users\\info\\Documents\\GitHub\\metaborg-fsharp\\spoofax\\minifsharp\\";
+	private final String PROJECT_DIRECTORY = "/home/sander/workspace/master-jaar1/lang-eng/language-engineering-project/spoofax/minifsharp/";
     
 	@Override public IStrategoTerm invoke(Context context, IStrategoTerm current, IStrategoTerm path) {
         PrintStream origErr = System.err;
@@ -54,8 +56,22 @@ public class strategy_generate_cil_0_1 extends Strategy {
 		}
 	}
 
-	private String getPathCil(IStrategoTerm path) {
+	private String getPath(IStrategoTerm path) {
 		String filename = PROJECT_DIRECTORY + ((IStrategoString) path).stringValue();
+		String p = ((IStrategoString) path).stringValue();
+		try {
+			p = URI.create(p).getPath();
+		}
+		catch (Exception ex) { }
+		
+		if (Paths.get(p).isAbsolute())
+			filename = p;
+		
+		return filename;
+	}
+	
+	private String getPathCil(IStrategoTerm path) {
+		String filename = getPath(path);
         return filename.substring(0, filename.lastIndexOf('.')) + ".cil";
 	}
 }

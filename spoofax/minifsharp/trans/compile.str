@@ -25,20 +25,27 @@ signature constructors
 rules
 
 	
-	generate-cil: (selected, position, ast, path, project-path) -> (filename, result) with
+	generate-exe: (selected, position, ast, path, project-path) -> (filename, result) with
 		filename 	:= <guarantee-extension(|"result.log")> path;
-		(cname, _) 	:= <show-cil> (selected, position, ast, path, project-path);
+		(cname, _) 	:= <gen-cil-really> (selected, position, ast, path, project-path);
 		result		:= <strategy-generate-cil(|path); process-output> cname
 		
-	run-cil: (selected, position, ast, path, project-path) -> (filename, result) with
+	run-exe: (selected, position, ast, path, project-path) -> (filename, result) with
 		filename 	:= <guarantee-extension(|"result.txt")> path;
-		(cname, _) 	:= <show-cil> (selected, position, ast, path, project-path);
+		(cname, _) 	:= <gen-cil-really> (selected, position, ast, path, project-path);
 		result		:= <strategy-run-cil(|path); process-output> cname
 	
 	show-cil: (selected, _, ast, path, project-path) -> (filename, result) with
 	    filename := <guarantee-extension(|$[cil])> path;
-	      a         := <nabl2-get-ast-analysis> ast;
 		result := <desugar-all; program-to-cil;  pp-debug> ast
+
+	gen-cil-really: (selected, _, ast, path, project-path) -> (filename, result) with
+	    filename := <guarantee-extension(|$[cil])> path;
+		result := <desugar-all; program-to-cil;  pp-debug> ast;
+		f := <fopen> (filename, "w");
+	    <fputs> (result, f);
+	    <fclose> f
+		
 
 	program-to-cil: Program(e,l@Let(_,a,b,c,d)) -> result with
 		wildcardVars := <getNamedWildcars;map(nabl2-get-ast-type; strip-forall; type-to-cil)> d; 

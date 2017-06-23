@@ -14,7 +14,7 @@ context-free syntax
 	Test.ProgramCil				= <
 .assembly extern FSharp.Core
 {
-  .ver 4:4:1:0
+  .ver 4:0:0:0
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A)
 }
 .assembly 'test1' { }
@@ -55,7 +55,7 @@ context-free syntax
         int32 V_2
       )
 
-      ldstr "Result: %A"
+      ldstr "%A"
       newobj instance void class [FSharp.Core]Microsoft.FSharp.Core.PrintfFormat`5\<class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2\<int32, class [FSharp.Core]Microsoft.FSharp.Core.Unit\>, class [mscorlib]System.IO.TextWriter, class [FSharp.Core]Microsoft.FSharp.Core.Unit, class [FSharp.Core]Microsoft.FSharp.Core.Unit, int32\>::'.ctor'(string)
       call !!0 class [FSharp.Core]Microsoft.FSharp.Core.ExtraTopLevelOperators::PrintFormatLine\<class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2\<int32,class [FSharp.Core]Microsoft.FSharp.Core.Unit\>\> (class [FSharp.Core]Microsoft.FSharp.Core.PrintfFormat`4\<!!0,class [mscorlib]System.IO.TextWriter,class [FSharp.Core]Microsoft.FSharp.Core.Unit,class [FSharp.Core]Microsoft.FSharp.Core.Unit\>)
       call int32 class Test1::get_<Name>()
