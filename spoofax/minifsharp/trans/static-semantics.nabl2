@@ -56,13 +56,13 @@ rules
 	OuterExprBlock[[ a@ExprBlock(exp, None()) ^ (s, _, mainscope) : ty]] := 
 		new s',
 		s' -P-> s,
-		ExprBlock2 [[ a ^ (s, s', _) : ty ]],
+		ExprBlock2N [[ a ^ (s, s', _) : _ ]],
 		mainscope -P-> s'.
 	
   	OuterExprBlock[[ a@ExprBlock(exp, Some(next)) ^ (s, _, mainscope) : ty]] := 
 		new s',
 		s' -P-> s,
-		ExprBlock2 [[ a ^ (s, s', _) : ty ]],
+		ExprBlock2N [[ a ^ (s, s', _) : _ ]],
 		OuterExprBlock[[ next ^ (s', _, mainscope) : ty ]].
 	
   	InnerExprBlock[[ a@ExprBlock(exp, None()) ^ (s, _, _) : ty]] := 
@@ -73,7 +73,7 @@ rules
   	InnerExprBlock[[ a@ExprBlock(exp, Some(next)) ^ (s, _, _) : ty]] := 
 		new s',
 		s' -P-> s,
-		ExprBlock2 [[ a ^ (s, s', _) : ty ]],
+		ExprBlock2N [[ a ^ (s, s', _) : _ ]],
 		InnerExprBlock[[ next ^ (s', _, _) : ty ]].
 
 	ExprBlock2[[ ExprBlock(a@Let(_, _, _, _, _), _) ^ (s, s', _) : ty ]] :=
@@ -82,22 +82,28 @@ rules
 		[[ a ^ (s, s') : ty ]].
 	ExprBlock2[[ ExprBlock(a, _) ^ (s, s', _) : ty ]] :=
 		[[ a ^ (s) : ty ]].
+	ExprBlock2N[[ ExprBlock(a@Let(_, _, _, _, _), _) ^ (s, s', _) : _ ]] :=
+		[[ a ^ (s, s') : _ ]].
+	ExprBlock2N[[ ExprBlock(a@LetConst(_, _, _), _) ^ (s, s', _) : _ ]] :=
+		[[ a ^ (s, s') : _ ]].
+	ExprBlock2N[[ ExprBlock(a, _) ^ (s, s', _) : _ ]] :=
+		[[ a ^ (s) : _ ]].
 
 	// Let Rules
 
-  	[[ a@Let(NonRecursive(), id, args, retId, body) ^ (s, s') : argCurried2 ]] := 
-		GetSpecifiedRetTy [[ retId ^ (s_body) : retTyp ]],
+  	[[ a@Let(NonRecursive(), id, args, retTy, body) ^ (s, s') : argCurried ]] := 
+		GetSpecifiedRetTy [[ retTy ^ (s_body) : ty ]],
 		new s_body, 
 		s_body -P-> s,
-	    InnerExprBlock[[ body ^ (s_body, _, _) : retTyp]],
-		MapCurry [[ args ^ (s_body, retTyp) : argCurried ]],
-		argCurried2 genOf(vars) argCurried,
+	    InnerExprBlock[[ body ^ (s_body, _, _) : ty]],
+	    MapCurry [[ args ^ (s_body, ty) : argCurried ]],
+	    argCurried2 genOf(vars) argCurried,
 		Const{id}.origin := a, 
 		Const{id} <- s',
 		Const{id} : argCurried2.
-	  
-  	[[ a@Let(Recursive(), id, args, retId, body) ^ (s, _) : argCurried2 ]] := 
-    	GetSpecifiedRetTy [[ retId ^ (s_body) : retTyp ]],
+
+  	[[ a@Let(Recursive(), id, args, retTy, body) ^ (s, _) : ty ]] := 
+    	GetSpecifiedRetTy [[ retTy ^ (s_body) : retTyp ]],
 		MapCurry [[ args ^ (s_body, retTyp) : argCurried ]],
 		argCurried2 genOf(vars) argCurried,
 		new s_body, 
