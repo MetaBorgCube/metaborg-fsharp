@@ -11,7 +11,6 @@ signature
     	Bool : Type
     	List : Type -> Type
     	Tuple : list(Tuple) -> Type
-    	Unit : Type
     	Function : Type * Type -> Type
     	Forall : list(Var) * Term -> Term
     	TVar : String -> Term
@@ -225,8 +224,6 @@ rules
   	[[ Const(v) ^ (s) : ty]] := [[ v ^ (s) : ty]].
   	[[ Integer(x) ^ (s) : Int()]].
    	[[ Bool(x) ^ (s) : Bool() ]].
-	
-	[[ Print(x) ^ (s) : Unit() ]] := [[ x ^ (s) : type ]].
 		
 	[[ EmptyList() ^ (s) : ty ]].
         	

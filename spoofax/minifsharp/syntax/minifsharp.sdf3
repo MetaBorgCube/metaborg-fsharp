@@ -14,7 +14,6 @@ lexical syntax
 	Identifier.Rec    			= "rec"   {reject}
 	Identifier.Match  			= "match" {reject}
 	Identifier.With   			= "with"  {reject}
-	Identifier.Printf 			= "printf"{reject}
 	Identifier.Type   			= "type"  {reject}
 	Identifier.True 			= "true"  {reject}
 	Identifier.False  			= "false" {reject}
@@ -28,7 +27,6 @@ lexical syntax
 	TypeConstIdentifier.Rec    	= "rec"   {reject}
 	TypeConstIdentifier.Match  	= "match" {reject}
 	TypeConstIdentifier.With   	= "with"  {reject}
-	TypeConstIdentifier.Printf 	= "printf"{reject}
 	TypeConstIdentifier.Type   	= "type"  {reject}
 	TypeConstIdentifier.True 	= "true"  {reject}
 	TypeConstIdentifier.False  	= "false" {reject}
@@ -72,7 +70,6 @@ context-free syntax
 
 	Expression.LetExp			= <<Let>>
 	Expression.Match			= <match <Expression> with <Rules>>
-	Expression.Print			= <printf <Expression>>
 	Expression.TypeDefinition	= <type <Identifier> = <TypeDefinition>>							{layout(and(and(	gt(col(first(2)),col(first(1))),
 																	 													gt(col(first(3)),col(first(1))))),
 																	 													gt(col(first(4)),col(first(1))))}
