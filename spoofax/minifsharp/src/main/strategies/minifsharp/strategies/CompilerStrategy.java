@@ -100,7 +100,7 @@ public abstract class CompilerStrategy extends Strategy {
 	        String line = "";
 
 	        while ((line = b.readLine()) != null) {
-	        	System.out.println(line);
+	        	System.out.print(line);
 	        }
 		} catch (IOException | InterruptedException e) {
 			e.printStackTrace();

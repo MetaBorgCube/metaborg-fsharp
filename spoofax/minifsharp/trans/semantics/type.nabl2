@@ -35,8 +35,9 @@ rules
 		
 	// Type parameters
     
-    [[ TypeDefinition(id, def) ^ (s) : ty ]] :=
+    [[ a@TypeDefinition(id, def) ^ (s) : ty ]] :=
 		[[ def ^ (s) : ty ]],
+        Const{id}.origin := a,
 		Const{id} <- s,
 		Const{id} : ty.
 		
