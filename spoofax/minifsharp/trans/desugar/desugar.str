@@ -77,8 +77,8 @@ rules
 	
 	// If Expressions
 
-	desugar: If(condition, then, else)	-> Match(condition,	[ Rule(Const(Bool(True())), then)
-							                  				, Rule(Const(Bool(False())), else)])
+	desugar: If(condition, a, b)		-> Match(condition,	[ Rule(Const(Bool(True())), a)
+							                  				, Rule(Const(Bool(False())), b)])
 	
 	// Unary Operations
 
@@ -87,7 +87,7 @@ rules
 
 	// Match Rules
 
-	desugar: Rules(a)				    ->  a
+	desugar: Rules(a)				    -> a
 	desugar: RuleFirst(a, b)			-> Rule(a, b)
 	desugar: RulesEscaped(a, None())	-> [a]
 	desugar: RulesEscaped(a, Some(b))	-> <concat> [[a], b]
