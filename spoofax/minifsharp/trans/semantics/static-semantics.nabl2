@@ -1,0 +1,55 @@
+module static-semantics
+
+imports
+
+  	signatures/-
+  	expression-block
+  	expression-logic
+  	expression
+  	let
+  	map
+  	pattern
+  	type
+  	
+signature
+
+  	constructors
+    	Int : Type
+    	Bool : Type
+    	List : Type -> Type
+    	Tuple : list(Tuple) -> Type
+    	Function : Type * Type -> Type
+    	Forall : list(Var) * Term -> Term
+    	TVar : String -> Term
+    	Origin : String
+    	UnionType : String -> Type
+    	
+  	name resolution
+
+    labels
+      	P I Q
+
+    order
+      	D < I,
+      	D < P,
+      	I < P,
+      	Q < D,
+      	Q < I,
+		Q < P
+
+    well-formedness
+	  	(P* . I*) | Q . (P* . I*)
+	  
+rules
+
+  	init ^ (s) := new s.
+  	
+	// Program Rules
+
+  	[[ Program(expBlock, main) ^ (s) ]] :=
+		new mainscope,
+  		ProgramExp [[ expBlock ^ (s, mainscope) : ty]],
+		new mainscope',
+    	mainscope' -P-> mainscope,
+  		[[ main ^ (mainscope, mainscope') : ty2]].
+		

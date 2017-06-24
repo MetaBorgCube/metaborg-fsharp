@@ -1,0 +1,46 @@
+module map
+
+imports
+
+  	signatures/-
+  	static-semantics
+  	expression-block
+  	expression-logic
+  	expression
+  	let
+  	map
+  	pattern
+  	type
+  	
+rules
+
+  	// Custom Map rules for unappended types with 1 parameter
+  	
+  	Map1UT[[ xs ^ (s1) : ty ]] := 
+  		Map1UT(default)[[ xs ^ (s1) : ty ]].
+	
+	Map1UT(X)[[ [x|xs] ^ (s1) : ty ]] :=
+		X[[ x ^ (s1) : ty ]],
+		Map1UT(X)[[ xs ^ (s1) : ty ]].
+
+	Map1UT(X)[[ [] ^ (s1) : ty ]].
+	
+  	// Custom Map rules for unappended types with 2 parameters
+  	
+  	Map2UT[[ xs ^ (s1,s2) : ty ]] := 
+  		Map2UT(default)[[ xs ^ (s1,s2) : ty ]].
+	
+	Map2UT(X)[[ [x|xs] ^ (s1,s2) : ty ]] :=
+		X[[ x ^ (s1,s2) : ty ]],
+		Map2UT(X)[[ xs ^ (s1,s2) : ty ]].
+
+	Map2UT(X)[[ [] ^ (s1,s2) : ty ]].
+	
+  	// Custom Map rules for curried types with 2 parameters
+	
+	MapCurry [[ [x|[]] ^ (s, retTy) : Function(argType, retTy) ]] :=
+		[[ x ^ (s) : argType ]].
+		
+	MapCurry [[ [x|xs] ^ (s, retTy) : Function(argType, ty) ]] :=
+		[[ x ^ (s) : argType ]],
+		MapCurry [[ xs ^ (s, retTy) : ty ]].

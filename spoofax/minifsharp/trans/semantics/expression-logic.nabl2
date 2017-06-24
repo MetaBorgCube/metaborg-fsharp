@@ -1,0 +1,37 @@
+module expression-logic
+
+imports
+
+  	signatures/-
+  	static-semantics
+  	expression-block
+  	expression-logic
+  	expression
+  	let
+  	map
+  	pattern
+  	type
+  	
+rules
+   
+	// All binary operation rules
+	
+	[[ BinaryOperation(PlusOp(), 		a,b) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
+	[[ BinaryOperation(MinOp() , 		a,b) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
+	[[ BinaryOperation(MultOp(), 		a,b) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
+	[[ BinaryOperation(EqualOp(), 		a,b) ^ (s) : Bool() ]] 		:= [[ a ^ (s) : ty     ]], [[ b ^ (s) : ty     ]].
+	[[ BinaryOperation(SmallerOp(), 	a,b) ^ (s) : Bool() ]] 		:= [[ a ^ (s) : Int()  ]], [[ b ^ (s) : Int()  ]].
+	[[ BinaryOperation(AndOp(),  		a,b) ^ (s) : Bool() ]] 		:= [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
+	[[ BinaryOperation(OrOp(),   		a,b) ^ (s) : Bool() ]] 		:= [[ a ^ (s) : Bool() ]], [[ b ^ (s) : Bool() ]].
+	
+	// All unary operation rules
+	
+	[[ UnaryOperation(NotOp(),   		a) ^ (s) : Bool() ]] 		:= [[ a ^ (s) : Bool() ]].
+	[[ UnaryOperation(NegativeOp(), 	a) ^ (s) : Int()  ]] 		:= [[ a ^ (s) : Int()  ]].
+	
+	// Integers and booleans
+
+  	[[ Const(v) ^ (s) : ty]] := 
+  		[[ v ^ (s) : ty]].
+  	[[ Integer(x) ^ (s) : Int() ]].
+   	[[ Bool(x) ^ (s) : Bool() ]].

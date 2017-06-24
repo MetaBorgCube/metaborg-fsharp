@@ -1,0 +1,69 @@
+module pattern
+
+imports
+
+  	signatures/-
+  	static-semantics
+  	expression-block
+  	expression-logic
+  	expression
+  	let
+  	map
+  	pattern
+  	type
+  	
+rules
+
+    // Match Rules
+    
+    [[ Match(id, rules) ^ (s) : ty ]] :=
+    	[[ id ^ (s) : idType ]],
+    	Map2UT [[ rules ^ (s, idType) : ty ]].
+    	
+    [[ Rule(pattern, body) ^ (s, idType) : ty ]] :=
+		new s_body, 
+		s_body -P-> s,
+    	Pattern [[ pattern ^ (s_body) : idType ]],
+    	[[ body ^ (s_body) : ty ]].
+    	
+    // Pattern Rules
+    
+    Pattern [[ Wildcard() ^ (s) : ty ]].
+    
+    Pattern [[ PatternOr(p1, p2) ^ (s) : ty ]] :=
+    	Pattern [[ p1 ^ (s) : ty ]],
+    	Pattern [[ p2 ^ (s) : ty ]].
+    	
+	Pattern [[ EmptyPatternList() ^ (s) : ty ]].
+    	
+    Pattern [[ PatternConcat(p1, p2) ^ (s) : List(ty) ]] :=
+    	Pattern [[ p1 ^ (s) : ty ]],
+    	Pattern [[ p2 ^ (s) : List(ty) ]].
+    	
+	Pattern [[ PatternTuple(plist) ^ (s) : Tuple(ty) ]] :=
+		Map1T(Pattern) [[ plist ^ (s) : ty]].
+		
+	Pattern [[ TypeConstruct(id, arg) ^ (s) : funcRetTy ]] :=
+		Const{id} -> s, 
+	  	Const{id} |-> d,
+	  	d : constructTy,
+	    ty2 instOf constructTy,
+	    Pattern [[ arg ^ (s) : argTy ]],
+	    ty2 == Function(argTy, funcRetTy).
+	
+  	Pattern [[ a@Identifier(id) ^ (s) : ty]] :=
+  		Const{id}.weakOrigin := a, 
+  		Const{id} <- s1, 
+		new s1,
+		new s2,
+		s1 -P-> s,
+		s2 -Q-> s,
+		s2 -P-> s1,
+		s -P-> s2,
+		Const{id} -> s2, 
+	  	Const{id} |-> d,
+		Const{id} : ty.
+		
+	Pattern [[ a@Const(_) ^ (s) : ty]] :=		[[ a ^ (s) : ty]].
+  	Pattern [[ a@Integer(_) ^ (s) : Int()]] :=	[[ a ^ (s) : ty]].
+   	Pattern [[ a@Bool(_) ^ (s) : Bool() ]] :=	[[ a ^ (s) : ty]].

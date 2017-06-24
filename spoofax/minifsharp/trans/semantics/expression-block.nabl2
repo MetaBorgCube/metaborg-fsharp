@@ -1,0 +1,65 @@
+module expression-block
+
+imports
+
+  	signatures/-
+  	static-semantics
+  	expression-block
+  	expression-logic
+  	expression
+  	let
+  	map
+  	pattern
+  	type
+  	
+rules
+
+	// Program Rules
+
+  	ProgramExp[[ Some(block @ ExprBlock(_, _)) ^ (s, mainscope) : ty ]] :=
+  		OuterExprBlock[[ block ^ (s, _, mainscope) : ty]].
+  	
+  	ProgramExp[[ None() ^ (s, mainscope) : ty ]] :=
+    	mainscope -P-> s.
+	
+	// Expression Block Rules
+
+	OuterExprBlock[[ a@ExprBlock(exp, None()) ^ (s, _, mainscope) : ty]] := 
+		new s',
+		s' -P-> s,
+		ExprBlock2N [[ a ^ (s, s', _) : _ ]],
+		mainscope -P-> s'.
+	
+  	OuterExprBlock[[ a@ExprBlock(exp, Some(next)) ^ (s, _, mainscope) : ty]] := 
+		new s',
+		s' -P-> s,
+		ExprBlock2N [[ a ^ (s, s', _) : _ ]],
+		OuterExprBlock[[ next ^ (s', _, mainscope) : ty ]].
+	
+  	InnerExprBlock[[ a@ExprBlock(exp, None()) ^ (s, _, _) : ty]] := 
+		new s',
+		s' -P-> s,
+		ExprBlock2 [[ a ^ (s, s', _) : ty ]].
+	
+  	InnerExprBlock[[ a@ExprBlock(exp, Some(next)) ^ (s, _, _) : ty]] := 
+		new s',
+		s' -P-> s,
+		ExprBlock2N [[ a ^ (s, s', _) : _ ]],
+		InnerExprBlock[[ next ^ (s', _, _) : ty ]].
+		
+	// Expression in Block References
+
+	ExprBlock2[[ ExprBlock(a@Let(_, _, _, _, _), _) ^ (s, s', _) : ty ]] :=
+		[[ a ^ (s, s') : ty ]].
+	ExprBlock2[[ ExprBlock(a@LetConst(_, _, _), _) ^ (s, s', _) : ty ]] :=
+		[[ a ^ (s, s') : ty ]].
+	ExprBlock2[[ ExprBlock(a, _) ^ (s, s', _) : ty ]] :=
+		[[ a ^ (s) : ty ]].
+		
+	ExprBlock2N[[ ExprBlock(a@Let(_, _, _, _, _), _) ^ (s, s', _) : _ ]] :=
+		[[ a ^ (s, s') : _ ]].
+	ExprBlock2N[[ ExprBlock(a@LetConst(_, _, _), _) ^ (s, s', _) : _ ]] :=
+		[[ a ^ (s, s') : _ ]].
+	ExprBlock2N[[ ExprBlock(a, _) ^ (s, s', _) : _ ]] :=
+		[[ a ^ (s) : _ ]].
+		

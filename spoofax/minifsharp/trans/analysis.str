@@ -5,7 +5,7 @@ imports
   nabl2shared
   nabl2runtime
   
-  static-semantics
+  src-gen/nabl2/static-semantics
   minifsharp
   pp
 

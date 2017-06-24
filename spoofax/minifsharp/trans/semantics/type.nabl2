@@ -1,0 +1,52 @@
+module type
+
+imports
+
+  	signatures/-
+  	static-semantics
+  	expression-block
+  	expression-logic
+  	expression
+  	let
+  	map
+  	pattern
+  	type
+  	
+rules
+
+    // Union types
+    
+    [[ a@TypeDefinition(id, Union(alist)) ^ (s) : UnionType(id) ]] :=
+    	Map1UT(TypeEscaped) [[ alist ^ (s) : UnionType(id) ]],
+		Const{id} <- s,
+		Const{id}.origin := a,
+		Const{id} : UnionType(id).
+    	
+    TypeEscaped [[ a@TypedID(id, type) ^ (s) : unionTy ]] :=
+    	[[ type ^ (s) : ty ]],
+		Const{id} <- s,
+		Const{id}.origin := a,
+		Const{id} : Function(ty, unionTy).
+		
+    TypeEscaped [[ a@TypeConstIdentifier(id) ^ (s) : unionTy ]] :=
+		Const{id} <- s,
+		Const{id}.origin := a !,
+		Const{id} : unionTy.
+		
+	// Type parameters
+    
+    [[ TypeDefinition(id, def) ^ (s) : ty ]] :=
+		[[ def ^ (s) : ty ]],
+		Const{id} <- s,
+		Const{id} : ty.
+		
+    [[ SingleType(t) ^ (s) : ty ]] := [[ t ^ (s) : ty ]].
+    
+    [[ IntegerType() ^ (s) : Int() ]].
+    
+    [[ BooleanType() ^ (s) : Bool() ]].
+    
+    [[ ListType(t) ^ (s) : List(ty) ]] := [[ t ^ (s) : ty ]].
+    
+	[[ TypeTuple(plist) ^ (s) : Tuple(ty) ]] := Map1T [[ plist ^ (s) : ty]].
+	
