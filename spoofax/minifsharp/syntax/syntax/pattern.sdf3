@@ -1,0 +1,49 @@
+module pattern
+
+imports
+
+	lexicals
+	expression
+	expression-logic
+
+context-free syntax
+
+	// Match Rules
+
+	Rules.RulesEscaped		= <<RuleFirst> <Rule?>>												{layout(			eq(col(first(2)),col(first(1))))}
+	Rules.Rules				= <<Rule>>											
+
+	RuleFirst.RuleFirst		= <<OuterPattern> -\> <Expression>> 								{layout(and(		ge(col(first(2)),col(first(1))),
+																	 												ge(col(first(3)),col(first(1)))))}
+	Rule.RawRule			= <| <OuterPattern> -\> <Expression> <Rule?>> 						{layout(and(and(and(ge(col(first(2)),col(first(1))),
+																	 												ge(col(first(3)),col(first(1)))),
+																	 												ge(col(first(4)),col(first(1)))),
+																	 												eq(col(first(5)),col(first(1)))))}
+	// Outer Patterns which allow for nested and unnested tuples
+	
+	Pattern.TypeConstruct			= <<TypeConstIdentifier> <Pattern>>								{prefer}
+	OuterPattern                    = Pattern
+	OuterPattern.OuterPatternTuple  = RawPatternTuple
+
+	RawPatternTuple.RawPatternTuple = <<Pattern> , <{Pattern ","}+>> 								{layout(and(		ge(col(first(2)),col(first(1))),
+																														ge(col(first(3)),col(first(1)))))}
+
+	// Patterns
+
+	Pattern.Wildcard			    = <_>
+	Pattern.PatternConcat			= <<Pattern> :: <Pattern>>										{right,layout(and(	ge(col(first(2)),col(first(1))),
+																	 													ge(col(first(3)),col(first(1)))))}
+	Pattern.PatternList				=  <[<{Pattern ";"}*>]>
+	Pattern.PatternOr				= <<Pattern> | <Pattern>>										{layout(and(		ge(col(first(2)),col(first(1))),
+																	 													ge(col(first(3)),col(first(1)))))}
+
+	Pattern.Const					= <<Const>>
+	Pattern.Identifier				= <<Identifier>>												{avoid}
+	Pattern.NestedPatternTuple		= <(<RawPatternTuple>)>
+	Pattern							= <(<Pattern>)>													{bracket}
+																	 													
+context-free priorities
+
+	{ left: Pattern.TypeConstruct} > 
+	{ right: Pattern.PatternConcat }
+	

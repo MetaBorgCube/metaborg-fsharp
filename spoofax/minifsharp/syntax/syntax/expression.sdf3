@@ -1,0 +1,60 @@
+module expression
+
+imports
+
+	lexicals
+	pattern
+	type
+	expression-logic
+
+context-free start-symbols
+
+	OuterExp
+
+context-free syntax
+
+	// Outer Expression Constructs which allow for nested and unnested tuples
+	
+	OuterExp                   	= Expression
+	OuterExp.OuterExpTuple  	= RawExpTuple
+
+	RawExpTuple.RawExpTuple 	= <<Expression> , <{Expression ","}+>>
+	Expression.NestedExpTuple	= <(<RawExpTuple>)>
+	
+	// Let Expression Definitions			
+
+	Expression.LetExp			= <<Let>>
+
+	Let.Let						= <let <RecursionType> <Identifier> <Argument+> <ReturnType?> = <ExprBlock>>	{layout(and(	gt(col(first(6)),col(first(2))), 
+																																gt(col(first(7)),col(first(2)))))}
+	Let.LetConst				= <let <Identifier> <ReturnType?> = <ExprBlock>> 								{layout(and(	gt(col(first(4)),col(first(1))),
+																																gt(col(first(5)),col(first(1)))))}
+	RecursionType.Recursive 	= <rec>
+	RecursionType.NonRecursive 	= <>
+	
+	// Return types and Arguments used in Let Expressions
+
+	ReturnType.ReturnType		= <: <OuterType>>
+
+	Argument.ArgIdentifier		= <<Identifier>>
+	Argument.TypedArgIdentifier	= <( <Identifier> : <OuterType> )>
+
+	// Other Expression Constructs
+
+	Expression.Match			= <match <Expression> with <Rules>>
+	Expression.TypeDefinition	= <type <Identifier> = <TypeDefinition>>	{layout(and(and(	gt(col(first(2)),col(first(1))),
+																	 							gt(col(first(3)),col(first(1))))),
+																	 							gt(col(first(4)),col(first(1))))}
+	
+	Expression.Identifier		= <<Identifier>>
+	Expression.Application		= <<Expression> <Expression>> 				{layout(			gt(col(first(2)),col(first(1))))}
+	Expression.List				= <[<{Expression ";"}*>]>
+	Expression.If				= <if <Expression> then <OuterExp> else <OuterExp>>
+	Expression					= <(<Expression>)>							{bracket}
+
+	ExprBlock.ExprBlock   		= <<ExprNewline> <ExprBlock?>> 				{layout(eq(			col(first(1)),col(first(2))))}
+	
+syntax
+
+	ExprNewline-CF = OuterExp-CF LAYOUT?-CF {enforce-newline}
+	

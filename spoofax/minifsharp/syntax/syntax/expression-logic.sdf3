@@ -1,0 +1,73 @@
+module expression-logic
+
+imports
+
+	lexicals
+	expression
+
+context-free syntax
+
+	// All Binary Operators in F#	
+
+	Expression.Plus			= <<Expression> + <Expression>>		{left,layout(and(	ge(col(first(3)),col(first(1))),
+																					ge(col(first(2)),sub(col(first(1)), num("2")))))}
+	Expression.Min			= <<Expression> - <Expression>>		{left,layout(and(	ge(col(first(3)),col(first(1))),
+																					ge(col(first(2)),sub(col(first(1)), num("2")))))}
+	Expression.Mult			= <<Expression> * <Expression>>		{left,layout(and(	ge(col(first(3)),col(first(1))),
+																					ge(col(first(2)),sub(col(first(1)), num("2")))))}
+	Expression.Concat		= <<Expression> :: <Expression>>	{left,layout(and(	ge(col(first(3)),col(first(1))),
+																					ge(col(first(2)),sub(col(first(1)), num("2")))))}
+	Expression.And			= <<Expression> && <Expression>>	{left,layout(and(	ge(col(first(3)),col(first(1))),
+																					ge(col(first(2)),sub(col(first(1)), num("2")))))}
+	Expression.Or			= <<Expression> || <Expression>>	{left,layout(and(	ge(col(first(3)),col(first(1))),
+																					ge(col(first(2)),sub(col(first(1)), num("2")))))}
+	Expression.Equal		= <<Expression> = <Expression>>		{left,layout(and(	ge(col(first(3)),col(first(1))),
+																					ge(col(first(2)),sub(col(first(1)), num("2")))))}
+	Expression.NotEqual		= <<Expression> \<\> <Expression>>	{left,layout(and(	ge(col(first(3)),col(first(1))),
+																					ge(col(first(2)),sub(col(first(1)), num("2")))))}
+	Expression.Smaller		= <<Expression> \< <Expression>>	{left,layout(and(	ge(col(first(3)),col(first(1))),
+																					ge(col(first(2)),sub(col(first(1)), num("2")))))}
+	Expression.Greater		= <<Expression> \> <Expression>>	{left,layout(and(	ge(col(first(3)),col(first(1))),
+																					ge(col(first(2)),sub(col(first(1)), num("2")))))}
+	Expression.SmallerEqual	= <<Expression> \<= <Expression>>	{left,layout(and(	ge(col(first(3)),col(first(1))),
+																					ge(col(first(2)),sub(col(first(1)), num("2")))))}
+	Expression.GreaterEqual	= <<Expression> \>= <Expression>>	{left,layout(and(	ge(col(first(3)),col(first(1))),
+																					ge(col(first(2)),sub(col(first(1)), num("2")))))}
+																						
+	// All Unary Operators in F#	
+																						
+	Expression.Negative		= <-<Expression>>
+	Expression.Not			= <! <Expression>>
+	
+	// Integers and Booleans
+	
+	Expression.Const		= <<Const>>
+
+	Const.Integer			= <<Integer>>
+	Const.Bool				= <<Boolean>>
+
+	Boolean.True			= <true>
+	Boolean.False			= <false>
+	
+context-free priorities
+
+  	{ left:
+		Expression.Application
+  	} > { left:
+	    Expression.Plus
+		Expression.Min
+		Expression.Mult
+		Expression.And
+		Expression.Or
+	} > { right:
+		Expression.Concat
+	} > { left: Expression.If
+	} > { left: Expression.Greater
+	} > { left:
+		Expression.Negative
+		Expression.Not
+	} > { left:
+	    Expression.LetExp
+	} > { left:
+		Expression.Match
+	}

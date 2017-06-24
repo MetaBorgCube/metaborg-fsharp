@@ -2,6 +2,9 @@ module desugar
 
 imports
 	src-gen/signatures/minifsharp-sig
+	src-gen/signatures/expression-logic-sig
+	src-gen/signatures/pattern-sig
+	src-gen/signatures/type-sig
 
 signature
 sorts

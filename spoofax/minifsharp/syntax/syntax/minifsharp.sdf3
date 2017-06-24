@@ -1,0 +1,19 @@
+module minifsharp
+
+imports
+
+	common
+	lexicals
+	expression
+
+context-free start-symbols
+
+	Program
+
+context-free syntax
+
+	// Program definition must at least contain a main definition and optionally can contain multiple auxiliary definitions
+
+	Program.Program				= <<ExprBlock?> [\<EntryPoint\>] <Let>>
+
+

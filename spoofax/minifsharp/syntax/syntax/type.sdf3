@@ -1,0 +1,35 @@
+module type
+
+imports
+
+	lexicals
+
+context-free syntax
+
+	// Outer Type definitions which allow for union types and for nested and unnested tuples
+	
+	TypeDefinition.TypeEscaped	= <<TypedID> | <{TypedID "|"}+>>
+	TypeDefinition.Type			= <| <TypedID> | <{TypedID "|"}+>>
+	TypeDefinition.SingleType	= <<OuterType>>
+
+	OuterType                   = Type
+	OuterType.OuterTypeTuple  	= RawTypeTuple
+
+	RawTypeTuple.RawTypeTuple 	= <<Type> * <{Type "*"}+>>
+
+	// Types
+
+	Type.IntegerType			= <int>
+	Type.BooleanType			= <bool>
+	Type.Identifier				= <<Identifier>>		{avoid}
+	Type.ListType				= <<Type> list>			{prefer}
+	Type						= <(<Type>)>			{bracket}
+	Type.NestedTypeTuple		= <(<RawTypeTuple>)>
+	
+	// Union type references
+	
+	TypedID.TypedID				= <<TypeConstIdentifier> of <OuterType>>	{layout(and(	gt(col(first(2)),col(first(1))),
+																	 						gt(col(first(3)),col(first(1)))))}
+	TypedID.TypeConstIdentifier	= <<TypeConstIdentifier>>
+	Type.TypeConstIdentifier	= <<TypeConstIdentifier>>					
+
