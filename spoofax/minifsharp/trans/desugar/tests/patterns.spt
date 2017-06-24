@@ -1,0 +1,17 @@
+module PatternsTests
+
+language minifsharp
+start symbol OuterPattern
+
+// List Patterns
+
+test empty list [[ [] ]] transform "Show desugared syntax" 				to EmptyPatternList()
+test concat list [[ [a] ]] transform "Show desugared syntax" 			to PatternConcat(Identifier("a"), EmptyPatternList())
+test concat list multiple [[ [a;b] ]] transform "Show desugared syntax" to PatternConcat(Identifier("a"), PatternConcat(Identifier("b"), EmptyPatternList()))
+
+// Tuple Patterns
+
+test pattern simple [[ 1,2 ]] transform "Show desugared syntax" 		to PatternTuple([_, _])
+test pattern simple extra [[ 1,2,3 ]] transform "Show desugared syntax" to PatternTuple([_, _, _])
+test pattern out [[ (1,2) ]] transform "Show desugared syntax" 			to PatternTuple([_, _])
+test pattern out extra [[ (1,2,3) ]] transform "Show desugared syntax" 	to PatternTuple([_, _, _])

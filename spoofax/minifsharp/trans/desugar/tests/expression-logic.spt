@@ -1,0 +1,27 @@
+module ExpressionLogicTests
+
+language minifsharp
+start symbol OuterExp
+
+// Direct Binary Operation Desugaring
+
+test binary + 	[[ a + b ]] transform "Show desugared syntax" 	to BinaryOperation(PlusOp(), _, _)
+test binary - 	[[ a - b ]] transform "Show desugared syntax" 	to BinaryOperation(MinOp(), _, _)
+test binary * 	[[ a * b ]] transform "Show desugared syntax" 	to BinaryOperation(MultOp(), _, _)
+test binary + 	[[ a + b ]] transform "Show desugared syntax" 	to BinaryOperation(PlusOp(), _, _)
+test binary && 	[[ a && b ]] transform "Show desugared syntax" 	to BinaryOperation(AndOp(), _, _)
+test binary || 	[[ a || b ]] transform "Show desugared syntax" 	to BinaryOperation(OrOp(), _, _)
+test binary = 	[[ a = b ]] transform "Show desugared syntax" 	to BinaryOperation(EqualOp(), _, _)
+
+// Indirect Binary Operation Desugaring
+
+test binary != 	[[ a <> b ]] transform "Show desugared syntax" 	to UnaryOperation(NotOp(), BinaryOperation(EqualOp(), _, _))
+test binary <= 	[[ a <= b ]] transform "Show desugared syntax" 	
+to BinaryOperation(OrOp(), BinaryOperation(SmallerOp(), Identifier("a"), Identifier("b")), BinaryOperation(EqualOp(), Identifier("a"), Identifier("b")))
+test binary >= 	[[ a >= b ]] transform "Show desugared syntax" 	
+to BinaryOperation(OrOp(), BinaryOperation(SmallerOp(), Identifier("b"), Identifier("a")), BinaryOperation(EqualOp(), Identifier("a"), Identifier("b")))
+
+// Direct Unary Operation Desugaring
+
+test unary - 	[[ -a ]] transform "Show desugared syntax" 	to UnaryOperation(NegativeOp(), _)
+test unary ! 	[[ !a ]] transform "Show desugared syntax" 	to UnaryOperation(NotOp(), _)

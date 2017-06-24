@@ -1,0 +1,11 @@
+module TypesTests
+
+language minifsharp
+start symbol OuterType
+
+// Tuple Types
+
+test type simple [[ int*int ]] transform "Show desugared syntax" 			to TypeTuple([_, _])
+test type simple extra [[ int*int*int ]] transform "Show desugared syntax" 	to TypeTuple([_, _, _])
+test type out [[ (int*int) ]] transform "Show desugared syntax" 			to TypeTuple([_, _])
+test type out extra [[ (int*int*int) ]] transform "Show desugared syntax" 	to TypeTuple([_, _, _])
