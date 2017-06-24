@@ -7,11 +7,11 @@ imports
   libstratego-lib
   src-gen/signatures/-
   nabl2/api
-  trans/pp
-  trans/desugar
-  trans/minifsharp
+  pp
+  desugar/desugar
+  minifsharp
   src-gen/nabl2/static-semantics
-  trans/compile-pattern-matching
+  compile/pattern-matching
   
 strategies
 	

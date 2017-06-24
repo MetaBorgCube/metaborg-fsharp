@@ -1,4 +1,4 @@
-module compile-pattern-matching
+module pattern-matching
 
 imports
 
@@ -7,11 +7,11 @@ imports
   libstratego-lib
   src-gen/signatures/-
   nabl2/api
-  trans/pp
-  trans/desugar
-  trans/minifsharp
+  pp
+  desugar/desugar
+  minifsharp
   src-gen/nabl2/static-semantics
-  trans/compile
+  compile/compile
 
 signature constructors
 	
