@@ -58,7 +58,7 @@ to "9"
 
 
 test recursion [[
-let rec fac (a:int) = match a with
+let rec fac a = match a with
 	| 1 -> 1
 	| x -> x + fac (a-1)
 	  

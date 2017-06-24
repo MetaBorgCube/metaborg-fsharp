@@ -32,6 +32,7 @@ to "3"
 
 
 
+
 test summation [[
 type entry = Some of int | None
 
@@ -57,6 +58,7 @@ let mainq args = amountSum testList
 
 ]] transform "Generate EXE (.exe file) and run" 
 to "243"
+
 
 
 
@@ -97,22 +99,6 @@ let testList =
 
 [<EntryPoint>]
 let mainq arg = amountMax testList
+
 ]] transform "Generate EXE (.exe file) and run" 
 to "90"
-
-
-
-test complex types [[
-type Option = Some of int | None
-type ComplexType = (int*bool*Option) list 
-let f (x:ComplexType) = match x with
-    | [(1, true, Some 1)] -> 1
-    | (_, true, None) :: tail -> 2
-    | (1, true, Some n) :: tail -> n
-    | _ :: _ ::  (_, _, None) :: tail -> 4
-    
-[<EntryPoint>]
-let mainq arg = f [(1, true, Some 5)]
-]] transform "Generate EXE (.exe file) and run" 
-to "5"
- 
