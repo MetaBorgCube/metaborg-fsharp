@@ -10,6 +10,5 @@ fixture [[
 // Basic Let Constructs
 
 test let				[[let x = 1]] parse succeeds
-test let rec			[[let rec x = 1]] parse succeeds
 test let no id			[[let 1 = 1]] parse fails
 test let rec no id		[[let rec 1 = 1]] parse fails

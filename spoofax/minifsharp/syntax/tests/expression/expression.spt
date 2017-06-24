@@ -23,7 +23,6 @@ test id keyword let		[[let]] parse fails
 test id keyword rec 	[[rec]] parse fails
 test id keyword match	[[match]] parse fails
 test id keyword with 	[[with]] parse fails
-test id keyword printf	[[printf]] parse fails
 test id keyword type 	[[type]] parse fails
 test id keyword int		[[int]] parse fails
 test id keyword bool 	[[bool]] parse fails
@@ -70,10 +69,6 @@ test list multiple		[[[ [1 ; 1 ; 1] ]]] parse succeeds
 test list incorrect		[[[ [; 1 ; 1 ; 1] ]]] parse fails
 test list nested single	[[[[ [[]] ]]]] parse succeeds
 test list nested		[[[[ [[] ; []] ]]]] parse succeeds
-
-// Print Expressions
-
-test print simple		[[printf 1]] parse succeeds
 
 // Type Expressions
 
