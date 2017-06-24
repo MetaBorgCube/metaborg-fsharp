@@ -1,0 +1,265 @@
+module matches
+
+language minifsharp
+
+test basic int match [[
+let f x = match x with
+	| 1 -> 2
+	| 2 -> 3
+	| _ -> 4	
+	
+[<EntryPoint>]
+let mainq arg = f 2
+]] transform "Generate EXE (.exe file) and run" 
+to "3"
+
+
+test basic unnamed wildcard [[
+let f x = match x with
+	| 1 -> 2
+	| _ -> 4	
+	| 2 -> 3
+	
+[<EntryPoint>]
+let mainq arg = f 2
+]] transform "Generate EXE (.exe file) and run" 
+to "4"
+
+
+test basic named wildcard [[
+let f x = match x with
+	| 1 -> 4
+	| a -> a	
+	| 2 -> 3
+	
+[<EntryPoint>]
+let mainq arg = f 2
+]] transform "Generate EXE (.exe file) and run" 
+to "2"
+
+
+test basic tuple [[
+let q (a:(int*bool) list) = match a with
+	| [(1,true); (2, false)] -> 5
+[<EntryPoint>]
+let mainq arg = q [(1,true);(2,false)]
+]] transform "Generate EXE (.exe file) and run" 
+to "5"
+
+
+test tuple wildcard [[
+let q (a:(int*bool) list) = match a with
+	| [(1,true); (c, false)] -> c
+[<EntryPoint>]
+let mainq arg = q [(1,true);(2,false)]
+]] transform "Generate EXE (.exe file) and run" 
+to "2"
+
+
+test capture list-of-tuple tail (named) [[
+let q (a:(int*bool) list) = match a with
+	| (b,true) :: c -> b
+[<EntryPoint>]
+let mainq arg = q [(1,true);(2,false)]
+]] transform "Generate EXE (.exe file) and run" 
+to "1"
+ 
+ 
+test capture list-of-tuple tail (unnamed) [[
+let q (a:(int*bool) list) = match a with
+	| (1,false) :: [] -> 6
+	| (b,true) :: _ -> b
+[<EntryPoint>]
+let mainq arg = q [(1,true);(2,false)]
+]] transform "Generate EXE (.exe file) and run" 
+to "1"
+
+
+test remove duplicate freevar [[
+let f (a:int) (b:int) =
+	let g (c:int) = match a with
+		| 2 -> b
+		| 1 -> b
+		| 1 -> b
+		| 1 -> b
+		| 1 -> b
+		| 1 -> b
+		| _ -> c
+	g
+
+[<EntryPoint>]
+let mainq arg = f 1 2 3
+ ]] transform "Generate EXE (.exe file) and run" 
+to "2"
+
+
+test union type [[
+type Q = A of int | B of int*bool | C of bool
+let f (z:Q) = match z with
+	| A 1 -> 10
+	| A 2 -> 11
+	| A x -> x
+	| B (1, true) -> 20
+	| B (1, _) -> 21
+	| B (2, x) -> 22
+	| B x -> 23
+	| _ -> 30
+[<EntryPoint>]
+let mainq arg = f (C true)
+]] transform "Generate EXE (.exe file) and run" 
+to "30"
+
+
+test union type [[
+type Q = A of int | B of int*bool | C of bool
+let f (z:Q) = match z with
+	| A 1 -> 10
+	| A 2 -> 11
+	| A x -> x
+	| B (1, true) -> 20
+	| B (1, _) -> 21
+	| B (2, x) -> 22
+	| B x -> 23
+	| _ -> 30
+[<EntryPoint>]
+let mainq arg = f (B (3, false))
+]] transform "Generate EXE (.exe file) and run" 
+to "23"
+
+
+test union type [[
+type Q = A of int | B of int*bool | C of bool
+let f (z:Q) = match z with
+	| A 1 -> 10
+	| A 2 -> 11
+	| A x -> x
+	| B (1, true) -> 20
+	| B (1, _) -> 21
+	| B (2, x) -> 22
+	| B x -> 23
+	| _ -> 30
+[<EntryPoint>]
+let mainq arg = f (B (2, false))
+]] transform "Generate EXE (.exe file) and run" 
+to "22"
+
+
+test union type [[
+type Q = A of int | B of int*bool | C of bool
+let f (z:Q) = match z with
+	| A 1 -> 10
+	| A 2 -> 11
+	| A x -> x
+	| B (1, true) -> 20
+	| B (1, _) -> 21
+	| B (2, x) -> 22
+	| B x -> 23
+	| _ -> 30
+[<EntryPoint>]
+let mainq arg = f (B (1, false))
+]] transform "Generate EXE (.exe file) and run" 
+to "21"
+
+
+test union type [[
+type Q = A of int | B of int*bool | C of bool
+let f (z:Q) = match z with
+	| A 1 -> 10
+	| A 2 -> 11
+	| A x -> x
+	| B (1, true) -> 20
+	| B (1, _) -> 21
+	| B (2, x) -> 22
+	| B x -> 23
+	| _ -> 30
+[<EntryPoint>]
+let mainq arg = f (B (1, true))
+]] transform "Generate EXE (.exe file) and run" 
+to "20"
+
+
+test union type [[
+type Q = A of int | B of int*bool | C of bool
+let f (z:Q) = match z with
+	| A 1 -> 10
+	| A 2 -> 11
+	| A x -> x
+	| B (1, true) -> 20
+	| B (1, _) -> 21
+	| B (2, x) -> 22
+	| B x -> 23
+	| _ -> 30
+[<EntryPoint>]
+let mainq arg = f (A 5)
+]] transform "Generate EXE (.exe file) and run" 
+to "5"
+
+
+test union type [[
+type Q = A of int | B of int*bool | C of bool
+let f (z:Q) = match z with
+	| A 1 -> 10
+	| A 2 -> 11
+	| A x -> x
+	| B (1, true) -> 20
+	| B (1, _) -> 21
+	| B (2, x) -> 22
+	| B x -> 23
+	| _ -> 30
+[<EntryPoint>]
+let mainq arg = f (A 2)
+]] transform "Generate EXE (.exe file) and run" 
+to "11"
+
+
+test union type [[
+type Q = A of int | B of int*bool | C of bool
+let f (z:Q) = match z with
+	| A 1 -> 10
+	| A 2 -> 11
+	| A x -> x
+	| B (1, true) -> 20
+	| B (1, _) -> 21
+	| B (2, x) -> 22
+	| B x -> 23
+	| _ -> 30
+[<EntryPoint>]
+let mainq arg = f (A 1)
+]] transform "Generate EXE (.exe file) and run" 
+to "10"
+
+
+test union type (typeConst) [[
+type Q = A of int | B of int*bool | C
+let f (z:Q) = match z with
+	| A 1 -> 10
+	| A 2 -> 11
+	| A x -> x
+	| C -> 15
+	| B (1, true) -> 20
+	| B (1, _) -> 21
+	| B (2, x) -> 22
+	| B x -> 23
+	| _ -> 30
+[<EntryPoint>]
+let mainq arg = f C
+]] transform "Generate EXE (.exe file) and run" 
+to "15"
+
+
+test union type; check that TypeConst does not function as wildcard [[
+type Q = A of int | B of int*bool | C
+let f (z:Q) = match z with
+	| A 1 -> 10
+	| A 2 -> 11
+	| A x -> x
+	| C -> 15
+	| B (1, true) -> 20
+	| B (1, _) -> 21
+	| B (2, x) -> 22
+	| B x -> 23
+	| _ -> 30
+[<EntryPoint>]
+let mainq arg = f (B (1, true))
+]] transform "Generate EXE (.exe file) and run" 
+to "20"

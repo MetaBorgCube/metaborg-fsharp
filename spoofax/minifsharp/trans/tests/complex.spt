@@ -1,0 +1,104 @@
+module complex
+
+language minifsharp
+
+              
+test count Nones [[
+type entry = Some of int | None
+
+let rec amountEmpty (entries : entry list) : int = match entries with
+    | []                -> 0
+    | head :: tail      -> match head with
+                           | Some n -> amountEmpty tail
+                           | OneHundred -> 1 + amountEmpty tail
+
+
+let testList = 
+    [   Some 12 ;
+        Some 18 ;
+        Some 19 ;
+        None     ;
+        Some 40 ;
+        Some 64 ;
+        Some 90 ;
+        None     ;
+        None     
+    ]
+
+[<EntryPoint>]
+let mainq arg = amountEmpty testList
+]] transform "Generate EXE (.exe file) and run" 
+to "3"
+
+
+
+
+test summation [[
+type entry = Some of int | None
+
+let rec amountSum (entries : entry list) : int = match entries with
+    | []                -> 0
+    | (Some n) :: tail    -> n + amountSum tail
+    | None :: tail      -> amountSum tail
+
+let testList = 
+    [   Some 12 ;
+        Some 18 ;
+        None    ;
+        Some 19 ;
+        Some 40 ;
+        Some 64 ;
+        Some 90 ;
+        None    ;
+        None     
+    ]
+    
+[<EntryPoint>]
+let mainq args = amountSum testList
+
+]] transform "Generate EXE (.exe file) and run" 
+to "243"
+
+
+
+
+test type alias [[
+type I = int
+
+let x (a : I) : I = a
+
+[<EntryPoint>]
+let mainq arg = x 1
+]] transform "Generate EXE (.exe file) and run" 
+to "1"
+
+
+test max with if condition [[
+type entry = Some of int | None
+
+let rec amountMax (entries : entry list) : int = match entries with
+    | []                -> 0
+    | head :: tail      -> match head with
+                           | Some n ->  if (n > amountMax tail) then
+                                            n
+                                        else
+                                            amountMax tail
+                           | None -> amountMax tail
+                           
+let testList = 
+    [   Some 12 ;
+        Some 18 ;
+        None    ;
+        Some 19 ;
+        Some 90 ;
+        Some 40 ;
+        Some 64 ;
+        None    ;
+        None     
+    ]
+
+[<EntryPoint>]
+let mainq arg = amountMax testList
+
+]] transform "Generate EXE (.exe file) and run" 
+to "90"

@@ -1,0 +1,70 @@
+module functions
+
+language minifsharp
+
+test basic currying [[
+let f (a:int) (b:int) (c:int) = a+b+c
+[<EntryPoint>]
+let mainq arg = f 1 2 3 
+]] transform "Generate EXE (.exe file) and run" 
+to "6"
+
+
+test return function [[
+let f (a:int) =
+	let g (b:int) = a+b
+	g
+[<EntryPoint>]
+let mainq arg = f 2 3
+]] transform "Generate EXE (.exe file) and run" 
+to "5"
+
+
+test return complex function [[
+let f a b =
+	let g (c:int) = match a with
+		| 2 -> 5
+		| 1 -> b
+		| _ -> 4
+	g
+
+[<EntryPoint>]
+let mainq arg = f 1 2 3
+]] transform "Generate EXE (.exe file) and run" 
+to "2"
+
+
+test basic free vars [[
+let f a = 
+	let g (b:int)  = 1+a+b
+	g
+
+[<EntryPoint>]
+let mainq arg = f 2 3
+]] transform "Generate EXE (.exe file) and run" 
+to "6"
+
+
+test hidden free vars [[
+let f a = 
+	let g (b:int) (c:int) = 1+a+b+c
+	let h (a:int) = g 3 4
+	h 100
+
+[<EntryPoint>]
+let mainq arg = f 1
+]] transform "Generate EXE (.exe file) and run" 
+to "9"
+
+
+test recursion [[
+let rec fac a = match a with
+	| 1 -> 1
+	| x -> x + fac (a-1)
+	  
+[<EntryPoint>]
+let mainq arg = fac 4
+]] transform "Generate EXE (.exe file) and run" 
+to "10"
+
+ 
