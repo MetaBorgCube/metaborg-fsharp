@@ -39,7 +39,7 @@ rules
 	    filename := <guarantee-extension(|$[cil])> path;
 		result := <desugar-all; program-to-cil;  pp-debug> ast
 		
-	file-store: (filename, result) -> () with
+	file-store: (filename, result) -> (filename, result) with
 		f := <fopen> (filename, "w");
 	    <fputs> (result, f);
 	    <fclose> f
