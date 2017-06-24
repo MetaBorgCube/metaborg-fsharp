@@ -4,6 +4,11 @@ imports
 
 	lexicals
 
+context-free start-symbols
+
+	OuterType
+	TypeDefinition
+	
 context-free syntax
 
 	// Outer Type definitions which allow for union types and for nested and unnested tuples
