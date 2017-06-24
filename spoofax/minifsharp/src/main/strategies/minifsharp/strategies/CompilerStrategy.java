@@ -39,6 +39,11 @@ public abstract class CompilerStrategy extends Strategy {
 	
 	protected abstract void runStrategy(Context context, IStrategoTerm current, IStrategoTerm path);
 
+	/**
+	 * Returns the real path to the file that needs to be compiled
+	 * @param path
+	 * @return
+	 */
 	protected String getPath(IStrategoTerm path) {
 		String filename = PROJECT_DIRECTORY + ((IStrategoString) path).stringValue();
 		String p = ((IStrategoString) path).stringValue();
@@ -62,7 +67,11 @@ public abstract class CompilerStrategy extends Strategy {
 		String filename = getPath(path);
         return filename.substring(0, filename.lastIndexOf('.')) + ".exe";
 	}
-	
+
+	/**
+	 * Run a console command
+	 * @param command
+	 */
 	protected void runCommand(String command) {
         Runtime r = Runtime.getRuntime();
         Process p;
@@ -75,6 +84,10 @@ public abstract class CompilerStrategy extends Strategy {
 		}
 	}
 	
+	/**
+	 * Run a console command where output is printed to the output stream
+	 * @param command
+	 */
 	protected void runCommandVerbose(String command) {
         Runtime r = Runtime.getRuntime();
         Process p;

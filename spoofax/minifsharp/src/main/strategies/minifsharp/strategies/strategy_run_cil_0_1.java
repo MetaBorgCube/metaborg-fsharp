@@ -7,6 +7,9 @@ import org.strategoxt.lang.Context;
 public class strategy_run_cil_0_1 extends CompilerStrategy {
     public static strategy_run_cil_0_1 instance = new strategy_run_cil_0_1();
 
+    /**
+     * Generate and run .exe file from the .cil file
+     */
 	@Override
 	protected void runStrategy(Context context, IStrategoTerm current, IStrategoTerm path) {
 		
