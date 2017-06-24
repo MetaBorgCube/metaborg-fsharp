@@ -21,15 +21,19 @@ signature
   	name resolution
 
     labels
-      	P I
+      	P I Q
 
     order
       	D < I,
       	D < P,
-      	I < P
+      	I < P,
+      	Q < D,
+      	Q < I,
+		Q < P
 
     well-formedness
-	  	(P* . I*)
+	  	(P* . I*) | Q . (P* . I*)
+	  
 	  
 rules
 
@@ -91,7 +95,7 @@ rules
 
 	// Let Rules
 
-  	[[ a@Let(NonRecursive(), id, args, retTy, body) ^ (s, s') : argCurried ]] := 
+  	[[ a@Let(NonRecursive(), id, args, retTy, body) ^ (s, s') : argCurried2 ]] := 
 		GetSpecifiedRetTy [[ retTy ^ (s_body) : ty ]],
 		new s_body, 
 		s_body -P-> s,
@@ -102,16 +106,16 @@ rules
 		Const{id} <- s',
 		Const{id} : argCurried2.
 
-  	[[ a@Let(Recursive(), id, args, retTy, body) ^ (s, _) : ty ]] := 
+  	[[ a@Let(Recursive(), id, args, retTy, body) ^ (s, _) : argCurried2 ]] := 
     	GetSpecifiedRetTy [[ retTy ^ (s_body) : retTyp ]],
+    	new s_body, 
+    	s_body -P-> s,	
+	    InnerExprBlock[[ body ^ (s_body, _, _) : retTyp]],
 		MapCurry [[ args ^ (s_body, retTyp) : argCurried ]],
 		argCurried2 genOf(vars) argCurried,
-		new s_body, 
-		s_body -P-> s,
 		Const{id}.origin := a, 
 		Const{id} <- s,
-		Const{id} : argCurried2,
-	    InnerExprBlock[[ body ^ (s_body, _, _) : retTyp]].
+		Const{id} : argCurried2.
     
   	[[ a@LetConst(id, retTy, body) ^ (s, s') : ty ]] := 
 		GetSpecifiedRetTy [[ retTy ^ (s_body) : ty ]],
@@ -164,17 +168,24 @@ rules
    	Pattern [[ a@Bool(_) ^ (s) : Bool() ]] :=	[[ a ^ (s) : ty]].
 	
   	Pattern [[ a@Identifier(id) ^ (s) : ty]] :=
-  		Const{id}.origin := a, 
-		Const{id} <- s,
-		Const{id} -> s, 
+  		Const{id}.weakOrigin := a, 
+  		Const{id} <- s1, 
+		new s1,
+		new s2,
+		s1 -P-> s,
+		s2 -Q-> s,
+		s2 -P-> s1,
+		s -P-> s2,
+		Const{id} -> s2, 
 	  	Const{id} |-> d,
 		Const{id} : ty.
     
     // Union types
     
-    [[ TypeDefinition(id, Union(alist)) ^ (s) : UnionType(id) ]] :=
+    [[ a@TypeDefinition(id, Union(alist)) ^ (s) : UnionType(id) ]] :=
     	Map1UT(TypeEscaped) [[ alist ^ (s) : UnionType(id) ]],
 		Const{id} <- s,
+		Const{id}.origin := a,
 		Const{id} : UnionType(id).
     	
     TypeEscaped [[ a@TypedID(id, type) ^ (s) : unionTy ]] :=
@@ -183,8 +194,9 @@ rules
 		Const{id}.origin := a,
 		Const{id} : Function(ty, unionTy).
 		
-    TypeEscaped [[ TypeConstIdentifier(id) ^ (s) : unionTy ]] :=
+    TypeEscaped [[ a@TypeConstIdentifier(id) ^ (s) : unionTy ]] :=
 		Const{id} <- s,
+		Const{id}.origin := a !,
 		Const{id} : unionTy.
 		
 	// Type parameters

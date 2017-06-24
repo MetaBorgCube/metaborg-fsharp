@@ -195,6 +195,10 @@ syntax
 
 context-free priorities
 
+	{ left: Pattern.TypeConstruct} > 
+	{ right: Pattern.PatternConcat },
+
+  	
   	{ left:
 		Expression.Application
   	} > { left:
@@ -205,6 +209,8 @@ context-free priorities
 		Expression.Or
 	} > { right:
 		Expression.Concat
+	} > { left: Expression.If
+	} > { left: Expression.Greater
 	} > { left:
 		Expression.Negative
 		Expression.Not
