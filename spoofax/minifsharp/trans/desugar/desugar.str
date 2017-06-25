@@ -123,7 +123,9 @@ rules
 	
 	// Types
 	
-	desugar: TypeEscaped(x,y) -> <desugar>Type(x,y)
-	desugar: Type(x,y) -> Union(<concat> [[x], y])
+	desugar: TypeEscaped(x,y) 								-> <desugar>Type(x,y)
+	desugar: Type(x,y) 										-> Union(<concat> [[x], y])
+	desugar: SingleID(x) 									-> Union([x])
+	desugar: SingleEscapedID(x) 							-> Union([x])
 	
 	

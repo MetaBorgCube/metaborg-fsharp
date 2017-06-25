@@ -13,9 +13,11 @@ context-free syntax
 
 	// Outer Type definitions which allow for union types and for nested and unnested tuples
 	
-	TypeDefinition.TypeEscaped	= <<TypedID> | <{TypedID "|"}+>>
-	TypeDefinition.Type			= <| <TypedID> | <{TypedID "|"}+>>
-	TypeDefinition.SingleType	= <<OuterType>>
+	TypeDefinition.TypeEscaped		= <<TypedID> | <{TypedID "|"}+>>
+	TypeDefinition.Type				= <| <TypedID> | <{TypedID "|"}+>>
+	TypeDefinition.SingleEscapedID	= <<TypedID>>
+	TypeDefinition.SingleID			= <| <TypedID>>
+	TypeDefinition.SingleType		= <<OuterType>>
 
 	OuterType                   = Type
 	OuterType.OuterTypeTuple  	= RawTypeTuple
