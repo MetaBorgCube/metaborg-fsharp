@@ -1,0 +1,90 @@
+module ExpressionLogicTest
+
+language minifsharp
+start symbol Program
+
+fixture [[
+								let x (i : int) (b : bool) (l : int list) (t : int * bool) = [[...]]
+								[<EntryPoint>] 
+								let main args = 1
+]]
+
+// All binary operations
+
+test plus int		[[ i + i ]] = 0 errors
+test plus bool int	[[ b + i ]] > 0 errors
+test plus list		[[ l + l ]] > 0 errors
+test plus tuple		[[ t + t ]] > 0 errors
+test plus int bool	[[ i + b ]] > 0 errors
+test plus bool		[[ b + b ]] > 0 errors
+
+test min int		[[ i - i ]] = 0 errors
+test min bool int	[[ b - i ]] > 0 errors
+test min list		[[ l - l ]] > 0 errors
+test min tuple		[[ t - t ]] > 0 errors
+test min int bool	[[ i - b ]] > 0 errors
+test min bool		[[ b - b ]] > 0 errors
+
+test mult int		[[ i * i ]] = 0 errors
+test mult bool int	[[ b * i ]] > 0 errors
+test mult list		[[ l * l ]] > 0 errors
+test mult tuple		[[ t * t ]] > 0 errors
+test mult int bool	[[ i * b ]] > 0 errors
+test mult bool		[[ b * b ]] > 0 errors
+
+test eq int			[[ i = i ]] = 0 errors
+test eq bool		[[ b = b ]] = 0 errors
+test eq list		[[ l = l ]] = 0 errors
+test eq tuple		[[ t = t ]] = 0 errors
+test eq bool int	[[ b = i ]] > 0 errors
+test eq int bool	[[ i = b ]] > 0 errors
+
+test smaller int		[[ i < i ]] = 0 errors
+test smaller bool		[[ b < b ]] > 0 errors
+test smaller list		[[ l < l ]] > 0 errors
+test smaller tuple		[[ t < t ]] > 0 errors
+test smaller bool int	[[ b < i ]] > 0 errors
+test smaller int bool	[[ i < b ]] > 0 errors
+
+test neq int		[[ i <> i ]] = 0 errors 
+test neq bool		[[ b <> b ]] = 0 errors
+test neq list		[[ l <> l ]] = 0 errors
+test neq tuple		[[ t <> t ]] = 0 errors
+test neq bool int	[[ b <> i ]] > 0 errors
+test neq int bool	[[ i <> b ]] > 0 errors
+
+test and int		[[ i && i ]] > 0 errors
+test and bool int	[[ b && i ]] > 0 errors
+test and list		[[ l && l ]] > 0 errors
+test and tuple		[[ t && t ]] > 0 errors
+test and int bool	[[ i && b ]] > 0 errors
+test and bool		[[ b && b ]] = 0 errors
+
+test or int			[[ i || i ]] > 0 errors
+test or bool int	[[ b || i ]] > 0 errors
+test or list		[[ l || l ]] > 0 errors
+test or tuple		[[ t || t ]] > 0 errors
+test or int bool	[[ i || b ]] > 0 errors
+test or bool		[[ b || b ]] = 0 errors
+
+// All unary operations
+
+test not int		[[ !i ]] > 0 errors
+test not bool 		[[ !b ]] = 0 errors
+test not list		[[ !l ]] > 0 errors
+test not tuple		[[ !t ]] > 0 errors
+
+test neg int		[[ -i ]] = 0 errors
+test neg bool 		[[ -b ]] > 0 errors
+test neg list		[[ -l ]] > 0 errors
+test neg tuple		[[ -t ]] > 0 errors
+
+// List operations
+
+test list concat int	[[ i :: l ]] = 0 errors
+test list concat bool	[[ b :: l ]] > 0 errors
+test list concat list	[[ l :: l ]] > 0 errors
+test list concat tuple	[[ t :: l ]] > 0 errors
+test int concat list	[[ l :: i ]] > 0 errors
+test bool concat list	[[ l :: b ]] > 0 errors
+test tuple concat list	[[ l :: t ]] > 0 errors
