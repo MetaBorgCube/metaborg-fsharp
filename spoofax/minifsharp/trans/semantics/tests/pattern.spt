@@ -1,0 +1,83 @@
+module TypeDefinitionTest
+
+language minifsharp
+start symbol Program
+
+fixture [[
+// Advanced union types
+type X = Some of int | None
+
+// Basic types
+let i = 1
+let b = true
+let t = (1,2)
+let l = [1;2]
+
+let a (x : X) = match [[...]]
+[<EntryPoint>] 
+let main args = 1
+]]
+
+// Tests for pattern matching
+
+test int int match	 	[[i with | 1 -> 1]] 	= 0 errors
+test int bool match 	[[i with | true -> 1]] 	> 0 errors
+test int list match	 	[[i with | [1;2] -> 1]] > 0 errors
+test int tuple match 	[[i with | (1,2) -> 1]] > 0 errors
+test int wcard match 	[[i with | _ -> 1]] 	= 0 errors
+
+test bool int match 	[[b with | 1 -> 1]] 	> 0 errors
+test bool bool match 	[[b with | true -> 1]] 	= 0 errors
+test bool list match	[[b with | [1;2] -> 1]] > 0 errors
+test bool tuple match 	[[b with | (1,2) -> 1]] > 0 errors
+test bool wcard match 	[[b with | _ -> 1]] 	= 0 errors
+
+test list int match 	[[l with | 1 -> 1]] 	> 0 errors
+test list bool match 	[[l with | true -> 1]] 	> 0 errors
+test list list match	[[l with | [1;2] -> 1]] = 0 errors
+test list tuple match 	[[l with | (1,2) -> 1]] > 0 errors
+test list wcard match 	[[l with | _ -> 1]] 	= 0 errors
+
+test tuple int match 	[[t with | 1 -> 1]] 	> 0 errors
+test tuple bool match 	[[t with | true -> 1]] 	> 0 errors
+test tuple list match	[[t with | [1;2] -> 1]] > 0 errors
+test tuple tuple match 	[[t with | (1,2) -> 1]] = 0 errors
+test tuple wcard match 	[[t with | _ -> 1]] 	= 0 errors
+
+// Advanced wildcard identifier magic
+
+test int eq widentifier	 		[[i with | a -> a = i]] 				= 0 errors
+test int plus widentifier	 	[[i with | a -> a + i]] 				= 0 errors
+test int and widentifier	 	[[i with | a -> a && i]] 				> 0 errors
+test int cc widentifier	 		[[i with | a -> a :: i]] 				> 0 errors
+
+test bool eq widentifier	 	[[b with | a -> a = b]] 				= 0 errors
+test bool plus widentifier	 	[[b with | a -> a + b]] 				> 0 errors
+test bool and widentifier	 	[[b with | a -> a && b]] 				= 0 errors
+test bool cc widentifier	 	[[b with | a -> a :: b]] 				> 0 errors
+
+test tuple eq widentifier	 	[[t with | a -> a = t]] 				= 0 errors
+test tuple plus widentifier	 	[[t with | a -> a + t]] 				> 0 errors
+test tuple and widentifier	 	[[t with | a -> a && t]] 				> 0 errors
+test tuple cc widentifier	 	[[t with | a -> a :: t]] 				> 0 errors
+
+test list eq widentifier	 	[[l with | a -> a = l]] 				= 0 errors
+test list plus widentifier	 	[[l with | a -> a && l]] 				> 0 errors
+test list and widentifier	 	[[l with | a -> a + l]] 				> 0 errors
+test list cc widentifier	 	[[l with | a -> a :: l]] 				> 0 errors
+test list cc int widentifier	[[l with | a -> 1 :: l]] 				= 0 errors
+
+test list widentifier			[[l with | [x1;x2] -> x1 + x2 + 1]]		= 0 errors
+test list bool widentifier		[[l with | [x1;_] -> x1 && 1]]			> 0 errors
+test list concat widentifier	[[l with | x1 ::[x2] -> x1 + x2 + 1]] 	= 0 errors
+test list concat widentifier	[[l with | x1 ::x2 -> x1 + x2 + 1]] 	> 0 errors
+
+test tuple widentifier			[[t with | (x1,x2) -> x1 + x2 + 1]] 	= 0 errors
+test tuple bool widentifier		[[t with | (x1,_) -> x1 && 1]] 			> 0 errors
+
+// Tests for union type pattern matching
+
+test union some match	[[x with | Some a -> 1]] 		= 0 errors
+test union some nested	[[x with | Some a -> a + 1]] 	= 0 errors
+test union none match	[[x with | None -> 1]] 			= 0 errors
+test union wcard match 	[[x with | _ -> 1]] 			= 0 errors
