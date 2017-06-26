@@ -1,0 +1,30 @@
+module LetScopeTest
+
+language minifsharp
+start symbol Program
+
+fixture [[
+let z a = 1
+let y = 1
+[[...]]
+[<EntryPoint>] 
+let main args = 1
+]]
+
+// Let references and recursive calls
+
+test let nonrec				[[let x (a : int) : int = 1 ]] = 0 errors
+test let nonrec arg			[[let x (a : int) : int = a ]] = 0 errors
+test let nonrec rec			[[let x (a : int) : int = x ]] > 0 errors
+test let nonrec ref const	[[let x (a : int) : int = y ]] = 0 errors
+test let nonrec ref			[[let x (a : int) : int = z 1 ]] = 0 errors
+
+test let rec				[[let rec x (a : int) : int = 1 ]] = 0 errors
+test let rec arg			[[let rec x (a : int) : int = a ]] = 0 errors
+test let rec rec			[[let rec x (a : int) : int = x 1 ]] = 0 errors
+test let rec ref const		[[let rec x (a : int) : int = y ]] = 0 errors
+test let rec ref			[[let rec x (a : int) : int = z 1 ]] = 0 errors
+
+test letc nonrec			[[let x = 1 ]] = 0 errors
+test letc nonrec ref const	[[let x = y ]] = 0 errors
+test letc nonrec ref		[[let x = z 1 ]] = 0 errors

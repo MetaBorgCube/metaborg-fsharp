@@ -1,0 +1,16 @@
+module TypesUnionTests
+
+language minifsharp
+start symbol TypeDefinition
+
+// Union Types
+
+test union type simple [[ A of int | B of bool ]] transform "Show desugared syntax" 
+to Union([TypedID(_, IntegerType()), TypedID(_, BooleanType())])
+test union type escaped simple [[ | A of int | B of bool ]] transform "Show desugared syntax" 
+to Union([TypedID(_, IntegerType()), TypedID(_, BooleanType())])
+
+test union type single [[ A of int ]] transform "Show desugared syntax" 
+to Union([TypedID(_, IntegerType())])
+test union type escaped single [[ | A of int ]] transform "Show desugared syntax" 
+to Union([TypedID(_, IntegerType())])

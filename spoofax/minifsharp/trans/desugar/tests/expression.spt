@@ -1,0 +1,45 @@
+module ExpressionTests
+
+language minifsharp
+start symbol OuterExp
+
+fixture [[
+	[[...]]
+]]
+
+// If Else Construct Desugaring
+
+test if else [[ if (a) then b else c ]] transform "Show desugared syntax" 	
+to Match(Identifier("a"), [	Rule(Const(Bool(True())), Identifier("b")), 
+							Rule(Const(Bool(False())), Identifier("c"))])
+							
+test if else if else [[ if (a) then b else if (c) then d else e ]] transform "Show desugared syntax" 	
+to Match(Identifier("a"), [	Rule(Const(Bool(True())), Identifier("b")), 
+							Rule(Const(Bool(False())), Match(Identifier("c"), [	Rule(Const(Bool(True())), Identifier("d")), 
+																				Rule(Const(Bool(False())), Identifier("e"))]))])
+
+// List Expressions
+
+test empty list [[ [] ]] transform "Show desugared syntax" 				to EmptyList()
+test concat list [[ [a] ]] transform "Show desugared syntax" 			to Concat(Identifier("a"), EmptyList())
+test concat list multiple [[ [a;b] ]] transform "Show desugared syntax" to Concat(Identifier("a"), Concat(Identifier("b"), EmptyList()))
+
+// Let Constructs
+
+test let nonrec [[ let x (a : int) : int = 1 ]] transform "Show desugared syntax" 	to Let(NonRecursive(), _, _, _, _)
+test let rec [[ let rec x (a : int) : int = 1 ]] transform "Show desugared syntax" 	to Let(Recursive(), _, _, _, _)
+test let const [[ let x = 1 ]] transform "Show desugared syntax" 					to LetConst(_, _, _)
+
+// Tuple Expressions
+
+test exp simple [[ 1,2 ]] transform "Show desugared syntax" 		to ExpTuple([_, _])
+test exp simple extra [[ 1,2,3 ]] transform "Show desugared syntax" to ExpTuple([_, _, _])
+test exp out [[ (1,2) ]] transform "Show desugared syntax" 			to ExpTuple([_, _])
+test exp out extra [[ (1,2,3) ]] transform "Show desugared syntax" 	to ExpTuple([_, _, _])
+
+// Argument Expressions
+
+test let argument arg id [[ let rec x a : int = 1 ]] transform "Show desugared syntax"
+to Let(Recursive(), _, [Argument("a", None())], _, _)
+test let argument arg id typed [[ let rec x (a : int) : int = 1 ]] transform "Show desugared syntax"
+to Let(Recursive(), _, [Argument("a", Some(IntegerType()))], _, _)

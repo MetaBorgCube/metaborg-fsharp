@@ -6,6 +6,10 @@ imports
 	expression
 	expression-logic
 
+context-free start-symbols
+
+	OuterPattern
+	
 context-free syntax
 
 	// Match Rules
