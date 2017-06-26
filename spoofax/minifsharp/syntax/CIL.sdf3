@@ -23,7 +23,7 @@ context-free syntax
 
 .class public auto ansi abstract sealed Test1 extends [mscorlib]System.Object
 {
-  .method public static specialname default int32 get_main () cil managed 
+  .method public static specialname default int32 main_entrypoint () cil managed 
   {
     .maxstack 8
     ldsfld int32 '\<StartupCode$test1\>.$Test1'::main@226
@@ -31,7 +31,7 @@ context-free syntax
   } 
   .property int32 main ()
   {
-    .get default int32 Test1::get_main () 
+    .get default int32 Test1::main_entrypoint () 
   }
 
   <{Function "\n"}*>

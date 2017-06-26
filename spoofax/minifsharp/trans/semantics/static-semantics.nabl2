@@ -51,5 +51,5 @@ rules
   		ProgramExp [[ expBlock ^ (s, mainscope) : ty]],
 		new mainscope',
     	mainscope' -P-> mainscope,
-  		[[ main ^ (mainscope, mainscope') : ty2]].
+  		[[ main ^ (mainscope, mainscope') : Forall([TVar("T1")],Function(TVar("T1"),Int()))]].
 		
