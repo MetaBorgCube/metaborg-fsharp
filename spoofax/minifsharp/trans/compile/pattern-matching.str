@@ -49,23 +49,18 @@ rules
 	
 	ruleComparison-to-cil: (Bool(), a, b, c) -> <ruleComparison-to-cil> (Int(), a, b, c) // bool is handled the same as ints	
 	ruleComparison-to-cil: (Int(), lhs, endOfRule, context) -> result with
-		begin  := <newname> "match_to_cil_int_begin_";
-		end    :=  <newname> "match_to_cil_int_end_";
 		a      := <concat> [[Dup()], <program-to-cil> (lhs, context), [Bne(LabelRef(endOfRule))]];
-		result := <concat> [[Label(begin)], a, [Pop(), Label(end)]]
+		result := <concat> [a, [Pop()]]
 	
 	
 	ruleComparison-to-cil: (tupleTy@Tuple(l1), lhs@PatternTuple(l2), endOfRule, context) -> result with 
-		begin           :=  <newname>"tupleMatch_begin_";
 		end             := <newname>"tupleMatch_end_";
 		noMatch         := <newname> "tupleMatch_nomatch_";
 		match           := <newname> "tupleMatch_match_";
 		elemComparisons := <zip;number(id); mapconcat(\((elemTy,lhsElem), idx) -> <compareTupleElem> (elemTy, lhsElem, idx, tupleTy, lhs, noMatch, context)\)> (l1, l2);
-		result          := <concat> [[Label(begin)], elemComparisons, [Pop(),Br(end), Label(noMatch), Br(endOfRule), Label(end)]] 
+		result          := <concat> [elemComparisons, [Pop(),Br(end), Label(noMatch), Br(endOfRule), Label(end)]] 
 	
 	ruleComparison-to-cil: (ty@List(x), lhs, endOfRule, context@(func,wildcards)) -> result with
-		begin           :=  <newname>"match_to_cil_list_begin_";
-		end             := <newname>"match_to_cil_list_end_";
 		listModuleClass := ClassType(Module("FSharp.Core"), ClassName("Microsoft.FSharp.Collections.ListModule"), NonGeneric());
 		lengthRetTy     := ClassType(Module("FSharp.Core"), ClassName("Microsoft.FSharp.Collections.FSharpList"), GenericClassTypeArgs("1", [ArgType2("0")]));
 		getListLen      := [Call(Static(), IntType(), listModuleClass, "Length", Some(GenericTypeIndicator([<type-to-cil> x])), [lengthRetTy])]; 
@@ -77,16 +72,13 @@ rules
 		end;
 		elemComparisons := <compareListItems> (lhs, (ty, endOfRule, context));
 		result          := <concat> [
-			[Label(begin), Dup()], 
+			[ Dup()], 
 			getListLen,
 			pushLhsLen,
 			comparison,
-			elemComparisons,
-			[Label(end)]]
+			elemComparisons]
 	
 	ruleComparison-to-cil: (ty@UnionType(x), lhs@TypeConstruct(subtype, pat), endOfRule, context@(func,wildcards)) -> result with
-		begin           :=  <newname>"unionMatch_begin_";
-		end             := <newname>"unionMatch_end_";
 		noMatch         := <newname> "unionMatch_nomatch_";
 		match           := <newname> "unionMatch_match_";
 		// check whether  lhs is of same subtype
@@ -112,17 +104,10 @@ rules
 	
 
 	
-	namedWildcard-to-cil: (_, a@Identifier(name), endOfRule, context@(func,wildcards)) -> result with
-		begin  := <newname> "match_to_cil_intID_begin_";
-		end    := <newname> "match_to_cil_intID_end_";
-		idx    := <getIdentifierIndex> (wildcards, a);
-		result := [Label(begin),StoreLocal(<int-to-string> idx), Label(end)]
+	namedWildcard-to-cil: (_, a@Identifier(name), endOfRule, context@(func,wildcards)) -> 
+		[StoreLocal(<getIdentifierIndex; int-to-string> (wildcards, a))]
 			
 	typeConstIdentifier-to-cil: (ty@UnionType(x), lhs@Identifier(subtype), endOfRule, context@(func,wildcards)) -> result with
-		begin           :=  <newname>"typeConstIdentifier_begin_";
-		end             := <newname>"typeConstIdentifier_end_";
-		noMatch         := <newname> "typeConstIdentifier_nomatch_";
-		match           := <newname> "typeConstIdentifier_match_";
 		// check whether  lhs is of same subtype
 		baseTy := ClassType(DefaultModule(), ClassName(<concat-strings> ["Test1/", x]), NonGeneric());
 		subClass := ClassType(DefaultModule(), ClassName(<concat-strings> ["Test1/", subtype]), NonGeneric());
@@ -136,37 +121,32 @@ rules
 	
 	// Caller pushes complete tuple on stack. This function always leaves the tuple on stack, regardless of whether or not it matches
 	compareTupleElem: (elemTy, lhsElem, idx, tupleTy, lhs, endOfRule, context) ->  result with
-		begin   := <newname>"tupleElem_begin_";
-		end     := <newname>"tupleElem_end_";
 		noMatch := <newname> "tupleElem_nomatch_";
 		match   := <newname> "tupleElem_match_";
 		getItem := [Call(Instance(), <concat-strings>["!", <int-to-string>idx], <type-to-cil> tupleTy, <concat-strings>["get_Item", <add;int-to-string> (1,idx)], None(), [])];
 		a       := <ruleComparison-to-cil> (elemTy, lhsElem, noMatch, context);
 		result  := <concat>[
-			[Label(begin), Dup()], // duplicate tuple 
+			[Dup()], // duplicate tuple 
 			getItem, // consumes tuple
 			a,
 			[Br(match), Label(noMatch), Pop(), // pop elem 
-			 Br(endOfRule), Label(match)], 
-			[Label(end)]
+			 Br(endOfRule), Label(match)]
 			]
 		
 	
 	compareListItems: (EmptyPatternList(), rest) -> [Pop()]
 	compareListItems: (PatternConcat(a,b), (ty@List(x), endOfRule, context@(_,wildcards))) -> result with 
-		begin   := <newname>"compareItems_begin_";
-		end     := <newname>"compareItems_end_";
 		noMatch := <newname> "compareItems_nomatch_";
 		match   := <newname> "compareItems_match_";
 		result  := <concat>[
-			[Label(begin), Dup(), Call(Instance(), "!0", <type-to-cil> ty, "get_HeadOrDefault", None(), [])], 
+			[Dup(), Call(Instance(), "!0", <type-to-cil> ty, "get_HeadOrDefault", None(), [])], 
 			<ruleComparison-to-cil> (x, a, noMatch, context), 
 			[Dup()],
 			<getListTail> ty,
 			<compareListItems> (b, (ty, noMatch, context)),
 			[Br(match), 
 			   Label(noMatch), Pop(), // pop head/tail
-			   Br(endOfRule), Label(match), Pop(), Label(end)]
+			   Br(endOfRule), Label(match), Pop()]
 			]
 	compareListItems: (a, (ty, endOfRule, context)) -> <ruleComparison-to-cil> (ty, a, endOfRule, context)
 
@@ -177,10 +157,8 @@ rules
 	
 
 	getListTail: ty -> result with
-		begin  := <newname>"getListTail_begin_";
-		end    := <newname>"getListTail_end_";
-		result := [Label(begin),Call(Instance(), ClassType(Module("FSharp.Core"), ClassName("Microsoft.FSharp.Collections.FSharpList"), GenericClassTypeArgs("1", [ArgType1("0")])),
-			<type-to-cil> ty, "get_TailOrNull", None(), []), Label(end)]
+		result := [Call(Instance(), ClassType(Module("FSharp.Core"), ClassName("Microsoft.FSharp.Collections.FSharpList"), GenericClassTypeArgs("1", [ArgType1("0")])),
+			<type-to-cil> ty, "get_TailOrNull", None(), [])]
 		
 	endsWithWildcard: PatternConcat(a,b) -> <endsWithWildcard> b
 	endsWithWildcard: a@Identifier(_) -> a
