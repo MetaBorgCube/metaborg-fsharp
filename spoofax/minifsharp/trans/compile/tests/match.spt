@@ -3,7 +3,7 @@ module matches
 language minifsharp
 
 test basic int match [[
-let f x = match x with
+let f (x:int) = match x with
 	| 1 -> 2
 	| 2 -> 3
 	| _ -> 4	
@@ -15,7 +15,7 @@ to "3"
 
 
 test basic unnamed wildcard [[
-let f x = match x with
+let f (x:int) = match x with
 	| 1 -> 2
 	| _ -> 4	
 	| 2 -> 3
@@ -27,7 +27,7 @@ to "4"
 
 
 test basic named wildcard [[
-let f x = match x with
+let f (x:int) = match x with
 	| 1 -> 4
 	| a -> a	
 	| 2 -> 3

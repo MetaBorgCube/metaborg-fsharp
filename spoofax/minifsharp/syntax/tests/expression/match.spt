@@ -16,8 +16,6 @@ test match id					[[match x with 1 -> true]] parse succeeds
 test match pat int				[[match 0 with 1 -> true]] parse succeeds
 test match pat bool				[[match true with true -> true]] parse succeeds
 test match pat id				[[match x with a -> true]] parse succeeds
-test match basic				[[match 0 with 1 -> 1 | 2 -> 2]] parse succeeds
-test match multiple				[[match 0 with 1 -> 1 | 2 -> 2 | 3 -> 3]] parse succeeds
 test match leading bar			[[match 0 with | 1 -> true]] parse succeeds
 test match default				[[match 0 with | _ -> true]] parse succeeds
 

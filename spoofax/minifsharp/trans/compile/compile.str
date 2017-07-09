@@ -12,6 +12,7 @@ imports
   minifsharp
   src-gen/nabl2/static-semantics
   compile/pattern-matching
+  compile/helper-funcs
   
 strategies
 	
@@ -36,8 +37,8 @@ rules
 		result		:= <strategy-run-cil(|path); process-output> cname
 	
 	show-cil: (selected, _, ast, path, project-path) -> (filename, result) with
-	    filename := <guarantee-extension(|$[cil])> path;
-		result := <desugar-all; program-to-cil;  pp-debug> ast
+	    filename    := <guarantee-extension(|$[cil])> path;
+		result      := <desugar-all; program-to-cil;  pp-debug> ast
 		
 	file-store: (filename, result) -> (filename, result) with
 		f := <fopen> (filename, "w");
@@ -46,10 +47,10 @@ rules
 		
 	program-to-cil: Program(e,l@Let(_,a,b,c,d)) -> result with
 		wildcardVars := <getNamedWildcars;map(nabl2-get-ast-type; strip-forall; type-to-cil)> d; 
-		result := ProgramCil(<concat> [[Method(IntType(), a, None(), [], LocalDefs(wildcardVars), <program-to-cil> (d, (l, [])))], <nonEntryPoints-to-cil> e], a)
+		result       := ProgramCil(<concat> [[Method(IntType(), a, None(), [], LocalDefs(wildcardVars), <exprBlock-to-cil> (d, (l, [])))], <nonEntryPoints-to-cil> e], a)
 		 
 	nonEntryPoints-to-cil: None() -> []
-	nonEntryPoints-to-cil: Some(x) -> <listifyExprBlock; map(let-to-cil); concat> x
+	nonEntryPoints-to-cil: Some(x) -> <listifyExprBlock; map(definitions-to-cil); concat> x
 	
 	process-output: Output(result, "") -> result
 
@@ -58,32 +59,34 @@ rules
 	
 // Application	
 	
-	// first application: a is an identifier, hence need to call constructor with free vars as parameters
-	program-to-cil: (z@Application(a@Identifier(name),b), context) -> result with
+	exp-to-cil: (z@Application(a@Identifier(name),b), context) -> result with
 		if <getOrigin; ?Let(_,_,_,_,_)> a then
 			result := <functionApplication-to-cil>(z, context)
 		else
 			result := <typeConstructorApplication-to-cil>(z, context)
 		end
-		
+	
+	// first application: a is an identifier, hence need to call constructor with free vars as parameters	
 	functionApplication-to-cil: (z@Application(a@Identifier(name),b), context) -> result with
 		funTy 	 	 := <nabl2-get-ast-type;strip-forall> a;
 		loadFunc 	 := <loadFunction> (a, context);
-		loadArg      := <program-to-cil> (b, context);
+		loadArg      := <exp-to-cil> (b, context);
 		invokeFunc   := [CallVirt(<type-to-cil> funTy)];
 		result       :=  <concat> [
 			loadFunc, 
 			loadArg, 
 			invokeFunc
 		]
-		
-	typeConstructor-to-cil: (a@Identifier(name), argCilTys, context) -> 
-		[NewObj(<localClass> name, argCilTys)]
+	
+	// not the first application: a is not an identifier, hence no need to call constructor with free vars as parameters
+	exp-to-cil: (z@Application(a,b), context) -> result with
+		funTy  := <nabl2-get-ast-type;strip-forall> a;
+		result :=  <concat> [<exp-to-cil> (a, context), <exp-to-cil> (b, context), [CallVirt(<type-to-cil> funTy)]]
 		
 	typeConstructorApplication-to-cil: (z@Application(a@Identifier(name),b), context) -> result with
 		ty 	 	 	 := <nabl2-get-ast-type;type-to-cil> b;
-		loadArg      := <program-to-cil> (b, context);
-		newObj 		 := <typeConstructor-to-cil> (a, [ty], context);
+		loadArg      := <exp-to-cil> (b, context);
+		newObj 		 := [NewObj(<localClass> name, [ty])];
 		result       := <concat>[
 			loadArg,
 			newObj
@@ -92,15 +95,12 @@ rules
 	loadFunction: (a@Identifier(name), context) -> result with
 		targetFunc   := <getOrigin> a;
 		freeVars     := <getFreeVars> targetFunc;
-		loadFreeVars := <mapconcat(\x->(x, context)\;program-to-cil)> freeVars;
+		loadFreeVars := <mapconcat(\x->(x, context)\;exp-to-cil)> freeVars;
 		freeVarTys   := <map(nabl2-get-ast-type)> freeVars;
 		callCtor     := [NewObj(<concat-strings;localClass> [name, "_0"], <map(type-to-cil)> freeVarTys)];
 		result 	  	 := <concat> [loadFreeVars, callCtor]
 	
-	// not the first application: a is not an identifier, hence no need to call constructor with free vars as parameters
-	program-to-cil: (z@Application(a,b), context) -> result with
-		funTy  := <nabl2-get-ast-type;strip-forall> a;
-		result :=  <concat> [<program-to-cil> (a, context), <program-to-cil> (b, context), [CallVirt(<type-to-cil> funTy)]]
+
 
 // Let Const
 		
@@ -108,7 +108,7 @@ rules
 		targetFunc   := <getOrigin> a;
 		constTy		 := <nabl2-get-ast-type;strip-forall> a;
 		freeVars     := <getFreeVars> targetFunc;
-		loadFreeVars := <mapconcat(\x->(x, context)\;program-to-cil)> freeVars;
+		loadFreeVars := <mapconcat(\x->(x, context)\;exp-to-cil)> freeVars;
 		freeVarTys   := <map(nabl2-get-ast-type; type-to-cil)> freeVars;
 		constName    := <concat-strings> ["get_", name];
 		call		 := [Call(Static(), <type-to-cil> constTy, ClassType(DefaultModule(), ClassName("Test1"), NonGeneric()), constName, None(), freeVarTys)] ;
@@ -117,46 +117,16 @@ rules
 			call
 	 	]
  
-// Type related stuff	
-	
-	type-to-cil: Forall(_, y)  -> <type-to-cil> y
-	type-to-cil: Function(x,y) -> ClassType(Module("FSharp.Core"), ClassName("Microsoft.FSharp.Core.FSharpFunc"), GenericClassTypeArgs("2", [<type-to-cil> x,<type-to-cil> y]))
-	type-to-cil: Int()         -> IntType()
-	type-to-cil: Bool()        -> BoolType()
-	type-to-cil: Tuple(x)      -> ClassType(Module("mscorlib"), ClassName("System.Tuple"), GenericClassTypeArgs(<length;int-to-string> x, <map(type-to-cil)> x))
-	type-to-cil: List(x)       -> ClassType(Module("FSharp.Core"), ClassName("Microsoft.FSharp.Collections.FSharpList"), GenericClassTypeArgs("1", [<type-to-cil> x]))
-	type-to-cil: UnionType(x)  -> ClassType(DefaultModule(), ClassName(<concat-strings> ["Test1/", x]), NonGeneric())
-	type-to-cil: TVar(x)       -> <concat-strings> ["!!", x]
-	
-	arg-type-to-cil: (Forall(_,x), argName, args)                                  -> <arg-type-to-cil> (x, argName, args)
-	arg-type-to-cil: (Function(x,y), argName, [Argument(argName, _) | _])          -> <type-to-cil> x
-	arg-type-to-cil: (Function(x,y), argName, [_ | argTl])                         -> <arg-type-to-cil> (y, argName, argTl)
-	
-	
-	ret-type-to-cil: (x, 0)               -> <type-to-cil> x
-	ret-type-to-cil: (Function(x,y), num) -> <ret-type-to-cil> (y, <subt> (num, 1))
-	ret-type-to-cil: (x,_)                -> <type-to-cil> x
-	
-	
-	sort-typevars: x -> <sort-list(LSort(\(a,b) -> <gtS>(<string-replace(|"T","")> a, <string-replace(|"T","")> b)\))> x
-	getGenericVarList: x -> <collect-all(?TVar(_));map(\TVar(z) -> z\); sort-typevars> x
-	genericVarListToOption: [] -> None()
-	genericVarListToOption: x -> Some(GenericTypeIndicator(x))
-	getOptionalGenericVars: x -> <getGenericVarList; genericVarListToOption> x
-	
-	strip-forall: Forall(x,y) -> y
-	strip-forall: x           -> x
-	
+
 // Misc cil-generation
 
-	program-to-cil: (ExprBlock(exp, None()), context) -> <program-to-cil> (exp, context)
-	program-to-cil: (ExprBlock(exp, Some(next)), context) -> <concat> [<program-to-cil> (exp, context), <program-to-cil> (next, context)]
+	exprBlock-to-cil: (x, context) -> <listifyExprBlock;mapconcat(\y -> <exp-to-cil> (y, context)\)> x
 	
-	program-to-cil: (Const(Integer(x)), context) -> [Ldc(x)]
-	program-to-cil: (Const(Bool(True())), context) -> [Ldc("1")]
-	program-to-cil: (Const(Bool(False())), context) -> [Ldc("0")]
+	exp-to-cil: (Const(Integer(x)), context)    -> [Ldc(x)]
+	exp-to-cil: (Const(Bool(True())), context)  -> [Ldc("1")]
+	exp-to-cil: (Const(Bool(False())), context) -> [Ldc("0")]
 	
-	program-to-cil: (BinaryOperation(op, a, b), context) -> <concat> [<program-to-cil> (a, context), <program-to-cil> (b, context), <binop-to-cil> op]
+	exp-to-cil: (BinaryOperation(op, a, b), context) -> <concat> [<exp-to-cil> (a, context), <exp-to-cil> (b, context), <binop-to-cil> op]
 	binop-to-cil: PlusOp()    -> [Add()]
 	binop-to-cil: MinOp()     -> [Sub()]
 	binop-to-cil: MultOp()    -> [Mul()]
@@ -165,55 +135,45 @@ rules
 	binop-to-cil: OrOp()      -> [Or()]  // Note: bitwise or.  Should be OK since bools are always 0 or 1
 	binop-to-cil: AndOp()     -> [And()] // Note: bitwise and. Should be OK since bools are always 0 or 1	
 	
-	program-to-cil: (v@Identifier(name), context) -> <getVar> (<getOrigin> v, v, context)
+	exp-to-cil: (v@Identifier(name), context) -> <loadVar> (<getOrigin> v, v, context)
 		
-	program-to-cil: (Let(_,_,_,_,_), context) -> [] // functions are compiled elsewhere; don't try to compile them into other function bodies
-	program-to-cil: (LetConst(_,_,_), context) -> []
+	// loadVar: origin, identifier, context
+	loadVar: (Let(_,_,_,_,_), identifier, context)         			-> <loadFunction> (identifier, context)
+	loadVar: (LetConst(_,_,_), identifier, context)        			-> <loadLetConst> (identifier, context)
+	loadVar: (TypeConstIdentifier(_), Identifier(name), context) 	-> [NewObj(<localClass> name, [])]
+	loadVar: (_, identifier, context@(func, wildcardDefs)) -> result with
+		wildcardIdx := < getIdentifierIndex> (wildcardDefs, identifier);
+		if <lt> (wildcardIdx, 0) then
+			freeVarIdx := <getIdentifierIndex> (<getFreeVars> func, identifier);
+			paramIndex := <getIdentifierIndex> (<getLetArgs>  func, identifier);
+			numParams  := <getLetArgs;length> func;
+			// set argIdx to the index of the identifier in the sequence [param1, ..., paramn, freeVar1, ..., freeVarn] 
+			if <lt> (freeVarIdx, 0) then argIdx := paramIndex else  argIdx := <add> (numParams, freeVarIdx) end; 
+			result := [LoadArg(<int-to-string> argIdx)]	// load freevar or param
+		else 
+			result := [LoadLocal(<int-to-string> wildcardIdx)] 				// load wildcard
+		end	
 	
-	program-to-cil: (c@ExpTuple(l), context) -> result with
-		items    := <mapconcat(\x -> <program-to-cil> (x, context)\)> l;
+	exp-to-cil: (Let(_,_,_,_,_), context) -> [] // functions are compiled elsewhere; don't try to compile them into other function bodies
+	exp-to-cil: (LetConst(_,_,_), context) -> []
+	
+	exp-to-cil: (c@ExpTuple(l), context) -> result with
+		items    := <mapconcat(\x -> <exp-to-cil> (x, context)\)> l;
 		paramTys := <length; range; map(\x -> ArgType1(<int-to-string>x)\)> l;
 		ctor     := [NewObj(<nabl2-get-ast-type;type-to-cil> c, paramTys)];
 		result   := <concat> [items, ctor]
 		
-	program-to-cil: (c@Concat(a,b), context) -> result with
-		cilA       := <program-to-cil> (a, context);
-		cilB       := <program-to-cil> (b, context);
+	exp-to-cil: (c@Concat(a,b), context) -> result with
+		cilA       := <exp-to-cil> (a, context);
+		cilB       := <exp-to-cil> (b, context);
 		cilClassTy := ClassType(Module("FSharp.Core"), ClassName("Microsoft.FSharp.Collections.FSharpList"), GenericClassTypeArgs("1", [ArgType1("0")]));
 		call       := Call(Static(), cilClassTy, <nabl2-get-ast-type;type-to-cil>c, "Cons", None(), [ArgType1("0"), cilClassTy]);
 		result     := <concat> [cilA, cilB, [call]] 
-	program-to-cil: (c@EmptyList(), context) -> result with
+	exp-to-cil: (c@EmptyList(), context) -> result with
 		cilClassTy := ClassType(Module("FSharp.Core"), ClassName("Microsoft.FSharp.Collections.FSharpList"), GenericClassTypeArgs("1", [ArgType1("0")]));
 		result     := [Call(Static(), cilClassTy, <nabl2-get-ast-type;type-to-cil>c, "get_Empty", None(), [])]
 
-		
-		
-		
-	getLetArgs: Let   (_,_, args, _, _) -> args
-	getLetArgs: LetConst   (_,_,_) -> []
-
-
-	
-	getVar: (Let(_,_,_,_,_), identifier, context)         -> <loadFunction> (identifier, context)
-	getVar: (LetConst(_,_,_), identifier, context)        -> <loadLetConst> (identifier, context)
-	getVar: (TypeConstIdentifier(_), identifier, context) -> <typeConstructor-to-cil> (identifier, [], context)
-	getVar: (_, identifier, context@(func, wildcardDefs)) -> result with
-		wildcardIdx := < getIdentifierIndex> (wildcardDefs, identifier);
-		if <lt> (wildcardIdx, 0) then 
-			result := [LoadArg(<getArg;int-to-string> (identifier, func))]
-		else 
-			result := [LoadLocal(<int-to-string> wildcardIdx)] 
-		end
-
-	// returns index of the identifier in the sequence [param1, ..., paramn, freeVar1, ..., freeVarn] 
-	getArg: (identifier, func) -> result with
-		freeVars   := <getFreeVars> func;
-		freeVarIdx := <getIdentifierIndex> (freeVars, identifier);
-		paramIndex := <getIdentifierIndex> (<getLetArgs>func, identifier);
-		numParams  := <getLetArgs;length> func;
-		if <lt> (freeVarIdx, 0) then result := paramIndex else  result := <add> (numParams, freeVarIdx) end
-
-	let-to-cil: a @ Let(recursiveType, name,args,retTy,body) -> result with 
+	definitions-to-cil: a @ Let(recursiveType, name,args,retTy,body) -> result with 
 		tmp 	   	 := <nabl2-get-ast-type; strip-forall> a;
 		returnType 	 := <ret-type-to-cil> (tmp, <length> args);
 		argTypes 	 := <map(\x -> <arg-type-to-cil> (tmp, <getIdentifierName> x, args)\)> args;
@@ -222,84 +182,74 @@ rules
 		freeVarTypes := <map(nabl2-get-ast-type; strip-forall; type-to-cil)> freeVars;
 		allArgTypes  := <concat>  [argTypes, freeVarTypes];
 		wildcardVars := <getNamedWildcars;map(nabl2-get-ast-type; strip-forall; type-to-cil)> body; 
-		method 		 := Method(returnType, name, genericTypes, allArgTypes, LocalDefs(wildcardVars), <program-to-cil> (body, (a, [])));
+		method 		 := Method(returnType, name, genericTypes, allArgTypes, LocalDefs(wildcardVars), <exprBlock-to-cil> (body, (a, [])));
 		curriedFunc  := <curriedFunction-to-cil> (tmp, tmp, name, [], args, freeVars);
-		result 	 	 := <concat> [[method], curriedFunc, <listifyExprBlock;mapconcat(let-to-cil)> body]
+		result 	 	 := <concat> [[method], curriedFunc, <listifyExprBlock;mapconcat(definitions-to-cil)> body]
 		
-	let-to-cil: a @ LetConst(name,retTy,body) ->  result with 
+	definitions-to-cil: a @ LetConst(name,retTy,body) ->  result with 
 		tmp 	   	 := <nabl2-get-ast-type; strip-forall> a;
 		returnType 	 := <type-to-cil> tmp;
 		genericTypes := <getOptionalGenericVars> tmp;
 		freeVars 	 := <getFreeVars> a;
 		freeVarTypes := <map(nabl2-get-ast-type; strip-forall; type-to-cil)> freeVars;
 		wildcardVars := <getNamedWildcars;map(nabl2-get-ast-type; strip-forall; type-to-cil)> body; 
-		method 		 := Method(returnType, name, genericTypes, freeVarTypes, LocalDefs(wildcardVars), <program-to-cil> (body, (a, [])));
+		method 		 := Method(returnType, name, genericTypes, freeVarTypes, LocalDefs(wildcardVars), <exprBlock-to-cil> (body, (a, [])));
 		curriedFunc  := <curriedFunction-to-cil> (tmp, tmp, name, [], [], freeVars);
-		result 	 	 := <concat> [[method], curriedFunc, <listifyExprBlock;mapconcat(let-to-cil)> body]
+		result 	 	 := <concat> [[method], curriedFunc, <listifyExprBlock;mapconcat(definitions-to-cil)> body]
 
-		// Generate for e.g. type Q = A of int | B of bool
-	// - class Q {int tag; abstract bool cmp(Q other);}
-	// - class A : Q { int x; public A(int x){tag = 0; this.x = x;} public bool cmp(Q other){return tagsEq && ((A)other).x == this.x;}}
-	// - class B : Q { bool x; public B(bool x){tag = 1; this.x = x;}  public bool cmp(Q other){return tagsEq && ((B)other).x == this.x;}}
-	let-to-cil: TypeDefinition(name, Union(l)) -> result with 
-	lbl1 := <newname> "lbl1_";
-		classTy := <localClass> name;
-		typeCmp := [
+	// Generate for e.g. type Q = A of int | B of bool
+	// - class Q {int Tag; bool EqualTypes (int32 otherTag);}
+	// - class A : Q { int Value; public A(int value){Tag = 0; this.Value = value;} public static int getTag() {return 0;}}
+	// - class B : Q { bool Value; public A(bool value){Tag = 1; this.Value = value;} public static int getTag() {return 1;}}
+	definitions-to-cil: TypeDefinition(name, Union(l)) -> result with 
+		match      := <newname> "typecheck_match_";
+		classTy    := <localClass> name;
+		typeCmp    := [
 			LoadArg("0"),
 			LoadField(IntType(), classTy, "Tag"),
 			LoadArg("1"),
-			Beq(LabelRef(lbl1)),
+			Beq(LabelRef(match)),
 			Ldc("0"),
 			Ret(),
-			Label(lbl1),
+			Label(match),
 			Ldc("1"),
 			Ret()
 		];
-		topClass := UnionClass(name, None(), [Field(IntType(), "Tag")], DefaultCtor(), IntType(), typeCmp);
-		q := <number(id); mapconcat(\(typedId, idx) -> <subclass-to-cil> (typedId, idx, classTy)\)> l;
-		result := <concat>[[topClass], q]
+		baseClass  := UnionClass(name, None(), [Field(IntType(), "Tag")], DefaultCtor(), IntType(), typeCmp);
+		subclasses := <number(id); mapconcat(\(typedId, idx) -> <unionSubclass-to-cil> (typedId, idx, classTy)\)> l;
+		result     := <concat>[[baseClass], subclasses]
 	
-	subclass-to-cil: z@(a@TypeConstIdentifier(name), idx, parent) -> result with
+	definitions-to-cil: _ -> []
+	
+	unionSubclass-to-cil: (TypeConstIdentifier(name), idx, parent) -> result with
 		varTyCil := <localClass> name;
 		ctorBody := <concat>[
 			<generateBaseInit> parent,
 			[LoadArg("0"), Ldc(<int-to-string> idx), StoreField(IntType(), parent, "Tag")]			
 		];
-		ctor := Ctor([], ctorBody);
-		cmpBody := [
-			Ldc(<int-to-string> idx)
-		];
-		class := UnionSubtypeClass(name, None(), parent, [], ctor, cmpBody);
-		result := [class]
-		
-	subclass-to-cil: z@(a@TypedID(name, ty), idx, parent) -> result with 
-		ty2 := < nabl2-get-ast-type; type-to-cil> ty;
+		ctor     := Ctor([], ctorBody);
+		cmpBody  := [Ldc(<int-to-string> idx)];
+		result   := [UnionSubtypeClass(name, None(), parent, [], ctor, cmpBody)]
+				
+	unionSubclass-to-cil: (TypedID(name, ty), idx, parent) -> result with 
+		cilTy    := < nabl2-get-ast-type; type-to-cil> ty;
 		varTyCil := <localClass> name;
 		ctorBody := <concat>[
 			<generateBaseInit> parent,
-			<generateFieldInit> ("1", name, [Param(ty2, "Value")]),
-			
+			<generateFieldInit> ("1", name, [Param(cilTy, "Value")]),
 			[LoadArg("0"), Ldc(<int-to-string> idx), StoreField(IntType(), parent, "Tag")]			
 		];
-		ctor := Ctor([Param(ty2, "x")], ctorBody);
-		cmpBody := [
-			Ldc(<int-to-string> idx)
-		];
-		class := UnionSubtypeClass(name, None(), parent, [Field(ty2, "Value")], ctor, cmpBody);
-		result := [class]
-	 
+		ctor    := Ctor([Param(cilTy, "x")], ctorBody);
+		cmpBody := [Ldc(<int-to-string> idx)];
+		result  := [UnionSubtypeClass(name, None(), parent, [Field(cilTy, "Value")], ctor, cmpBody)]
 
 	
-	let-to-cil: _ -> []
 
 
- 
-	getIdentifierName: Argument(x, _)	        -> x
-	getIdentifierName: Identifier(x)            -> x
-	getIdentifierName: Let(_, name, _, _, _)    -> name // required for getExprBlockArgs (bit of a dirty hack..)
-	getIdentifierName: LetConst(name, _, _)     -> name // required for getExprBlockArgs
-	
-	
+
+
+	// Generate the classes for the objects that represent functions; one class for each argument of the function. Each class
+	// stores all processed arguments and has an Invoke function that creates an object of the next class in the chain.
 	curriedFunction-to-cil: (_, _, _, _, [], freeVars) -> []
 	curriedFunction-to-cil: (funTy, ty@Function(x,y), name, processedArgs, nextArgs@[argHd | argTl], freeVars) -> result with
 		funcName 	 := <concat-strings> [name, "_", <length;int-to-string>processedArgs];
@@ -315,29 +265,13 @@ rules
 		function     := FunctionDefinition(funcName, genericVars, baseClass, allFields, ctor, retTy, argTy, instructions);
 		nextFunction := <curriedFunction-to-cil> (funTy, y, name, <concat> [processedArgs, [argHd]], argTl, freeVars);
 		result 		 := <concat> [[function], nextFunction] 
-		
-		
-	loadArg: (processed, funTy, className, identifierName) -> result with 
-		fldType := <arg-type-to-cil> (funTy,identifierName, processed);
-		result  := [LoadArg("0"), LoadField(fldType, <localClass>className, identifierName)] 
-	loadArgs: (processed, funTy, className) -> <mapconcat(\x -> <loadArg> (processed, funTy, className, <getIdentifierName> x)\)> processed
-
-	getFreeVarName: x -> <concat-strings> ["freevar_", x]
-
-	loadFreeVar: (className, freeVar) -> result with
-		ty        := <nabl2-get-ast-type; type-to-cil> freeVar;
-		fieldName := <getIdentifierName;getFreeVarName> freeVar;
-		result    := [LoadArg("0"), LoadField(ty, <localClass>className, fieldName)]
-	loadFreeVars: (className, freeVars) -> <mapconcat(\x -> (className, x)\; loadFreeVar)> freeVars
 	
-	getCurrentArgs: (processed, [])      -> processed
-	getCurrentArgs: (processed, [hd|tl]) -> <concat> [processed, [hd]]
-	
-	generateInvokeImplementation: (funTy, className, processed, nextArgs, freeVars) -> result with
+	// call the next object in the chain. For the last object in the chain, call the actual function.
+	generateInvokeImplementation: (funTy, className, processed, nextArgs@[nextArg|_], freeVars) -> result with
 		objName         := <concat-strings> [className, "_", <length;int-to-string> processed];
-		loadCurriedArgs := <loadArgs> (processed, funTy, objName);
+		loadCurriedArgs := <loadFields> (processed, funTy, objName);
 		loadFreeVars    := <loadFreeVars> (<concat-strings> [className, "_", <length;int-to-string> processed], freeVars);
-		argTys          := <getCurrentArgs;map(nabl2-get-ast-type;type-to-cil)> (processed, nextArgs);       // Note: does not work for generics
+		argTys          := <concat;map(nabl2-get-ast-type;type-to-cil)> [processed, [nextArg]];
 		freeVarTys      := <map(nabl2-get-ast-type;type-to-cil)> freeVars;
 		tys             := <concat> [argTys, freeVarTys];
 		if <lt> (<length>nextArgs, 2) then 
@@ -352,6 +286,20 @@ rules
 			loadFreeVars,
 			callNext
 	 	]
+	 	
+	loadField: (processed, funTy, className, identifierName) -> result with 
+		fldType := <arg-type-to-cil> (funTy,identifierName, processed);
+		result  := [LoadArg("0"), LoadField(fldType, <localClass> className, identifierName)] 
+	loadFields: (processed, funTy, className) -> <mapconcat(\x -> <loadField> (processed, funTy, className, <getIdentifierName> x)\)> processed
+
+	loadFreeVar: (className, freeVar) -> result with
+		ty        := <nabl2-get-ast-type; type-to-cil> freeVar;
+		fieldName := <getIdentifierName;getFreeVarName> freeVar;
+		result    := [LoadArg("0"), LoadField(ty, <localClass>className, fieldName)]
+	loadFreeVars: (className, freeVars) -> <mapconcat(\x -> (className, x)\; loadFreeVar)> freeVars
+	
+	
+
  
 
  
@@ -385,59 +333,5 @@ rules
 	    ];
 		result := Ctor(all_params, body)
 
-	
-	listifyExprBlock: ExprBlock(exp, Some(next)) -> <concat> [[exp], <listifyExprBlock> next]
-	listifyExprBlock: ExprBlock(exp, None()) -> [exp]
-	
-	
-	// get free vars: identifiers that resolve to arguments that are not defined within this function or its nested functions
-	getFreeVars: func -> <getFreeVars2> (func, [])
-	
-	getFreeVars2: (func, processedFuncs) -> result with	
-		allIdentifiers 		   := <collect-all(?Identifier(_))> func;
-		allArguments 		   := <collect-all(?Argument(_,_))> func;
-		identifiersToArguments := <remove-all(\x -> <getOrigin; not(?Argument(_,_))> x\)> allIdentifiers;         // remove all identifiers that do not resolve to args (e.g. that resolve to funcs)
-		allLocalFreeVars 	   := <remove-all(\x -> <elem> (<getOrigin>x, allArguments)\)> identifiersToArguments;    // remove all that resolve to an argument within the scope of this func
-
-		identifiersToFuncs  := <remove-all(\x -> <getOrigin; not(?Let(_,_,_,_,_))> x\)> allIdentifiers;         // remove all identifiers that do not resolve to args (e.g. that resolve to funcs)
-		identifiersToOtherFuncs := <remove-all(\x -> <eq> (<getOrigin>x, func)\)> identifiersToFuncs;         // remove all identifiers that do not resolve to args (e.g. that resolve to funcs)
-		nestedFreeVars := <mapconcat(getOrigin; getFreeVars)> identifiersToOtherFuncs;
-		realNestedFreeVars :=  <remove-all(\x -> <elem> (<getOrigin>x, allArguments)\)> nestedFreeVars; // remove all that resolve to an argument within the scope of this func
-
-		allFreeVars := <concat> [allLocalFreeVars, realNestedFreeVars];
-		result                 := <zip; foldr(![], union(\((_,a) ,(_,b)) -> <eq> (a,b) \), ![<id>]); map(\(x,y) -> x\)> (allFreeVars, <map(getOrigin)> allFreeVars) // remove duplicate references to the same var		
-
 		
-	getExprBlockArgs: (scope, l@Let(_,_, _, _, _)) -> [l]
-	getExprBlockArgs: (scope, l@LetConst(_, _, _)) -> [l]
-	getExprBlockArgs: (scope, _)                   -> []
-	
-	
-
-	// helpers for getIdentifierIndex.
-	indexOf: ([]        , var, idx) -> -1
-	indexOf: ([var | tl], var, idx) -> idx
-	indexOf: ([_   | tl], var, idx) -> <indexOf> (tl, var, <add> (idx, 1))
-	
-	getOrigin: Identifier(var_name) -> result with 
-		node    := <nabl2-get-ast-analysis> var_name;
-		ref-occ := <nabl2-mk-occurrence(|"Const")> var_name;
-		dec-occ := <nabl2-get-resolved-name(|node);Fst> ref-occ;
-		if < nabl2-get-property(|node, "origin")> dec-occ then
-			result  := <nabl2-get-property(|node, "origin")> dec-occ
-		else
-		result  := <nabl2-get-property(|node, "weakOrigin")> dec-occ
-		end
-	
-	// gets origin if it is an identifier, otherwise returns the identity
-	getWeakOrigin: a@Identifier(_) -> <getOrigin> a
-	getWeakOrigin: x -> x
-	
-	// returns the index of var in the list vars, or -1 if not present. Uses only the name in the identifier.
-	getIdentifierIndex: (vars, var) -> result with
-		varOrigins := <map(getWeakOrigin)> vars;
-		varOrigin  := <getOrigin> var;
-		result 	   := <indexOf> (varOrigins, varOrigin, 0)
-		
-	localClass: name -> ClassType(DefaultModule(), ClassName(<concat-strings> ["Test1/", name]), NonGeneric())
 

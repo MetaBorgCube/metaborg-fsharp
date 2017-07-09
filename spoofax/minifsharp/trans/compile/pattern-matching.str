@@ -12,18 +12,19 @@ imports
   minifsharp
   src-gen/nabl2/static-semantics
   compile/compile
+  compile/helper-funcs
 
 signature constructors
 	
 	Output: String * String -> Term
 	
 rules
-	program-to-cil: (match@Match(e, matches), context@(func, wildcardDefs)) -> result with
+	exp-to-cil: (match@Match(e, matches), context@(func, wildcardDefs)) -> result with
 		namedWildcards := <getNamedWildcars> matches;
 		allWildcards   := <union> (wildcardDefs, namedWildcards);
 		endOfMatch     := <newname> "endOfMatch_";
 		ty             := <nabl2-get-ast-type> e;
-		a              := <program-to-cil> (e, context);	
+		a              := <exp-to-cil> (e, context);	
 		b              := <mapconcat(\x -> <rule-to-cil> (ty, x, endOfMatch, (func, allWildcards))\)> matches;
 		nomatch        := [Pop(), LoadString(""), Ldc("0"), Ldc("0"), NewObj(ClassType(Module("FSharp.Core"), ClassName("Microsoft.FSharp.Core.MatchFailureException"), NonGeneric()), [StringType(), IntType(), IntType()]), Throw()];
 		result         := <concat> [a, b, nomatch, [Label(endOfMatch)]]
@@ -31,7 +32,7 @@ rules
 	rule-to-cil: (ty, Rule(lhs, rhs), endOfMatch, context) -> result with
 		endOfRule  := <newname> "endOfRule_";
 		comparison := <ruleComparison-to-cil> (ty, lhs, endOfRule, context);
-		b          := <program-to-cil> (rhs, context);
+		b          := <exp-to-cil> (rhs, context);
 		result     := <concat> [comparison, b, [Br(LabelRef(endOfMatch)), Label(endOfRule)]]
 	
 	
@@ -49,7 +50,7 @@ rules
 	
 	ruleComparison-to-cil: (Bool(), a, b, c) -> <ruleComparison-to-cil> (Int(), a, b, c) // bool is handled the same as ints	
 	ruleComparison-to-cil: (Int(), lhs, endOfRule, context) -> result with
-		a      := <concat> [[Dup()], <program-to-cil> (lhs, context), [Bne(LabelRef(endOfRule))]];
+		a      := <concat> [[Dup()], <exp-to-cil> (lhs, context), [Bne(LabelRef(endOfRule))]];
 		result := <concat> [a, [Pop()]]
 	
 	
