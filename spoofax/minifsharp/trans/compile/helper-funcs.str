@@ -1,0 +1,116 @@
+module helper-funcs
+
+imports
+
+  libstratego-gpp
+  libspoofax/stratego/debug
+  libstratego-lib
+  src-gen/signatures/-
+  nabl2/api
+  pp
+  desugar/desugar
+  minifsharp
+  src-gen/nabl2/static-semantics
+  compile/compile
+
+rules
+
+ 
+	getIdentifierName: Argument(x, _)	        -> x
+	getIdentifierName: Identifier(x)            -> x
+	getIdentifierName: Let(_, name, _, _, _)    -> name // required for getExprBlockArgs (bit of a dirty hack..)
+	getIdentifierName: LetConst(name, _, _)     -> name // required for getExprBlockArgs
+	
+		
+	listifyExprBlock: ExprBlock(exp, Some(next)) -> <concat> [[exp], <listifyExprBlock> next]
+	listifyExprBlock: ExprBlock(exp, None())     -> [exp]
+	
+	
+	// get free vars: identifiers that resolve to arguments that are not defined within this function or its nested functions
+	getFreeVars: func -> result with	
+		allIdentifiers 		    := <collect-all(?Identifier(_))> func;
+		allArguments 		    := <collect-all(?Argument(_,_))> func;
+		identifiersToArguments  := <remove-all(\x -> <getOrigin; not(?Argument(_,_))> x\)> allIdentifiers;         // remove all identifiers that do not resolve to args (e.g. that resolve to funcs)
+		allLocalFreeVars 	    := <remove-all(\x -> <elem> (<getOrigin>x, allArguments)\)> identifiersToArguments;    // remove all that resolve to an argument within the scope of this func
+
+		identifiersToFuncs      := <remove-all(\x -> <getOrigin; not(?Let(_,_,_,_,_))> x\)> allIdentifiers;         // remove all identifiers that do not resolve to funcs
+		identifiersToOtherFuncs := <remove-all(\x -> <eq> (<getOrigin>x, func)\)> identifiersToFuncs;         		// remove all identifiers to functions equal to the current function
+		nestedFreeVars          := <mapconcat(getOrigin; getFreeVars)> identifiersToOtherFuncs;						// get the free vars of all directly reachable functions
+		realNestedFreeVars      := <remove-all(\x -> <elem> (<getOrigin>x, allArguments)\)> nestedFreeVars; 		// remove all freevars that resolve to an argument within the scope of this func
+
+		allFreeVars             := <concat> [allLocalFreeVars, realNestedFreeVars];
+		// remove duplicate references to the same var
+		result                  := <zip; foldr(![], union(\((_,a) ,(_,b)) -> <eq> (a,b) \), ![<id>]); map(\(x,y) -> x\)> (allFreeVars, <map(getOrigin)> allFreeVars)		
+
+		
+	getExprBlockArgs: (scope, l@Let(_,_, _, _, _)) -> [l]
+	getExprBlockArgs: (scope, l@LetConst(_, _, _)) -> [l]
+	getExprBlockArgs: (scope, _)                   -> []
+	
+	
+
+	// helpers for getIdentifierIndex.
+	indexOf: ([]        , var, idx) -> -1
+	indexOf: ([var | tl], var, idx) -> idx
+	indexOf: ([_   | tl], var, idx) -> <indexOf> (tl, var, <add> (idx, 1))
+	
+	getOrigin: Identifier(var_name) -> result with 
+		node       := <nabl2-get-ast-analysis> var_name;
+		ref-occ    := <nabl2-mk-occurrence(|"Const")> var_name;
+		dec-occ    := <nabl2-get-resolved-name(|node);Fst> ref-occ;
+		if < nabl2-get-property(|node, "origin")> dec-occ then
+			result := <nabl2-get-property(|node, "origin")> dec-occ
+		else
+		result     := <nabl2-get-property(|node, "weakOrigin")> dec-occ
+		end
+	
+	// gets origin if it is an identifier, otherwise returns the identity
+	getWeakOrigin: a@Identifier(_) -> <getOrigin> a
+	getWeakOrigin: x -> x
+	
+	// returns the index of var in the list vars, or -1 if not present. Uses only the name in the identifier.
+	getIdentifierIndex: (vars, var) -> result with
+		varOrigins := <map(getWeakOrigin)> vars;
+		varOrigin  := <getOrigin> var;
+		result 	   := <indexOf> (varOrigins, varOrigin, 0)
+	
+	getFreeVarName: x -> <concat-strings> ["freevar_", x]
+	
+	localClass: name -> ClassType(DefaultModule(), ClassName(<concat-strings> ["Test1/", name]), NonGeneric())
+	
+	// Type related stuff	
+	
+	type-to-cil: Forall(_, y)  -> <type-to-cil> y
+	type-to-cil: Function(x,y) -> ClassType(Module("FSharp.Core"), ClassName("Microsoft.FSharp.Core.FSharpFunc"), GenericClassTypeArgs("2", [<type-to-cil> x,<type-to-cil> y]))
+	type-to-cil: Int()         -> IntType()
+	type-to-cil: Bool()        -> BoolType()
+	type-to-cil: Tuple(x)      -> ClassType(Module("mscorlib"), ClassName("System.Tuple"), GenericClassTypeArgs(<length;int-to-string> x, <map(type-to-cil)> x))
+	type-to-cil: List(x)       -> ClassType(Module("FSharp.Core"), ClassName("Microsoft.FSharp.Collections.FSharpList"), GenericClassTypeArgs("1", [<type-to-cil> x]))
+	type-to-cil: UnionType(x)  -> ClassType(DefaultModule(), ClassName(<concat-strings> ["Test1/", x]), NonGeneric())
+	type-to-cil: TVar(x)       -> <concat-strings> ["!!", x]
+	
+	// rather than querying the assigned type of the arg, get the arg type from type of the function; this results in TVar(x) instead of '?ty-x'
+	arg-type-to-cil: (Forall(_,x), argName, args)                         -> <arg-type-to-cil> (x, argName, args)
+	arg-type-to-cil: (Function(x,y), argName, [Argument(argName, _) | _]) -> <type-to-cil> x
+	arg-type-to-cil: (Function(x,y), argName, [_ | argTl])                -> <arg-type-to-cil> (y, argName, argTl)
+	
+	// usage: ret-type-to-cil (funcTy, numArgs). Returns the n-th return type of the curried functiontype.
+	// The second parameter is necessary because a function might return a real function; a function with two params has
+	// the same type as a function with one param that returns a new function that takes a single param.
+	ret-type-to-cil: (x, 0)               -> <type-to-cil> x
+	ret-type-to-cil: (Function(x,y), num) -> <ret-type-to-cil> (y, <subt> (num, 1))
+	ret-type-to-cil: (x,_)                -> <type-to-cil> x
+	
+	
+	sort-typevars: x -> <sort-list(LSort(\(a,b) -> <gtS>(<string-replace(|"T","")> a, <string-replace(|"T","")> b)\))> x
+	getGenericVarList: x -> <collect-all(?TVar(_));map(\TVar(z) -> z\); sort-typevars> x
+	genericVarListToOption: [] -> None()
+	genericVarListToOption: x -> Some(GenericTypeIndicator(x))
+	getOptionalGenericVars: x -> <getGenericVarList; genericVarListToOption> x
+	
+	strip-forall: Forall(x,y) -> y
+	strip-forall: x           -> x
+	
+			
+	getLetArgs: Let(_,_, args, _, _) -> args
+	getLetArgs: LetConst(_,_,_) 	 -> []
