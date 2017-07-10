@@ -2,10 +2,8 @@ module CIL
 
 lexical syntax
 Int = [0-9]+
-Name = [a-zA-Z] [a-zA-Z0-9]*
-Type = Name
-String = Name
-LiberalString = [a-zA-Z0-9 \[\]\.\<\>\`\!]
+Name = [a-zA-Z] [a-zA-Z0-9]+
+LiberalString = [a-zA-Z0-9 \[\]\.\<\>\`\!]+
 context-free start-symbols
 	Test
 
@@ -34,7 +32,7 @@ context-free syntax
     .get default int32 Test1::main_entrypoint () 
   }
 
-  <{Function "\n"}*>
+  <{Definition "\n"}*>
 }
 
 .namespace '\<StartupCode$test1\>'
@@ -58,7 +56,7 @@ context-free syntax
       ldstr "%A"
       newobj instance void class [FSharp.Core]Microsoft.FSharp.Core.PrintfFormat`5\<class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2\<int32, class [FSharp.Core]Microsoft.FSharp.Core.Unit\>, class [mscorlib]System.IO.TextWriter, class [FSharp.Core]Microsoft.FSharp.Core.Unit, class [FSharp.Core]Microsoft.FSharp.Core.Unit, int32\>::'.ctor'(string)
       call !!0 class [FSharp.Core]Microsoft.FSharp.Core.ExtraTopLevelOperators::PrintFormatLine\<class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2\<int32,class [FSharp.Core]Microsoft.FSharp.Core.Unit\>\> (class [FSharp.Core]Microsoft.FSharp.Core.PrintfFormat`4\<!!0,class [mscorlib]System.IO.TextWriter,class [FSharp.Core]Microsoft.FSharp.Core.Unit,class [FSharp.Core]Microsoft.FSharp.Core.Unit\>)
-      call int32 class Test1::get_<Name>()
+      call int32 class Test1::<Name>()
       callvirt instance !1 class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2\<int32, class [FSharp.Core]Microsoft.FSharp.Core.Unit\>::Invoke(!0)
       pop 
       ldc.i4.0 
@@ -71,11 +69,10 @@ context-free syntax
 }
 >
 
-GenericTypeIndicator.GenericTypeIndicator = <\<<{Typ ","}+>\>>
 
 
-Function.Method = <
-.method public static specialname default <Typ> get_<Name> <GenericTypeIndicator?> ( <{Typ ","}*> )  cil managed 
+Definition.Method = <
+.method public <MethodType> default <Typ> <Name> <GenericTypeIndicator?> ( <{Typ ","}*> )  cil managed 
 {
 	.custom instance void class [mscorlib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::'.ctor'() =  (01 00 00 00 )
 	.maxstack 1024
@@ -85,55 +82,15 @@ Function.Method = <
 }
 >
 
-Function.FunctionDefinition = <
-.class nested assembly auto ansi serializable beforefieldinit <Name> <GenericTypeIndicator?> extends <Typ>
+Definition.Class = <
+.class nested assembly auto ansi serializable beforefieldinit <Name> <GenericTypeIndicator?> <BaseClass>
 {
 
   <{Field "\n"}*> 
 
   <Ctor>
 
-  .method public virtual strict instance default <Typ> Invoke (<Typ> x)  cil managed 
-  {
-    .maxstack 1024
-    <{Instruction "\n"}*>
-    ret 
-  }
-}
->
-
-
-Function.UnionClass = <
-.class nested assembly auto ansi serializable beforefieldinit <Name> <GenericTypeIndicator?>
-{
-
-  <{Field "\n"}*> 
-
-  <Ctor>
-
-  .method public virtual strict instance default bool EqualTypes (<Typ> x)  cil managed 
-  {
-    .maxstack 1024
-    <{Instruction "\n"}*>
-    ret 
-  }
-}
->
-
-Function.UnionSubtypeClass = <
-.class nested assembly auto ansi serializable beforefieldinit <Name> <GenericTypeIndicator?> extends <Typ>
-{
-
-  <{Field "\n"}*> 
-
-  <Ctor>
-
-  .method public static strict default int32 GetTag ()  cil managed 
-  {
-    .maxstack 1024
-    <{Instruction "\n"}*>
-    ret 
-  }
+  <{Definition "\n"}*>
 }
 >
 
@@ -143,8 +100,7 @@ LocalDefs.LocalDefs = <.locals init (
 )>
 
 Field.Field = <.field  public  <Typ> <Name>>
-
-Param.Param = <<Typ> <String>>
+Param.Param = <<Typ> <Name>>
 
 Ctor.Ctor = <.method assembly specialname rtspecialname instance default void '.ctor' (<{Param ","}*>)  cil managed
 {
@@ -152,22 +108,21 @@ Ctor.Ctor = <.method assembly specialname rtspecialname instance default void '.
   <{Instruction "\n"}*>
   ret
 }>
-Ctor.DefaultCtor = <.method assembly specialname rtspecialname instance default void '.ctor' ()  cil managed
-{
-  .maxstack 4
-  ret
-}>
+
+GenericTypeIndicator.GenericTypeIndicator = <\<<{Typ ","}+>\>>
+
+BaseClass.BaseClass = <extends <Typ>>
+BaseClass.NoBaseClass = <>
 
 CallType.Static = <>
 CallType.Instance = <instance>
 
-//class [FSharp.Core]Microsoft.FSharp.Core.FSharpFunc`2<"
-
+MethodType.StaticMethod = <static>
+MethodType.InstanceMethod = <virtual instance>
 
 Typ.ClassType = <class <Module><ClassName><GenericClassTypeArgs>>
 Typ.ArgType2 = <!!<Int>>
 Typ.ArgType1 = <!<Int>>
- 
 Typ.IntType = <int32>
 Typ.BoolType = <bool>
 Typ.StringType = <string>
@@ -210,6 +165,6 @@ Instruction.Bgt = <bgt.un <LabelRef>>
 Instruction.Blt = <blt.un <LabelRef>>
 Instruction.Beq = <beq <LabelRef>>
 Instruction.BrFalse = <brfalse <LabelRef>>
-Instruction.Label = <<String>: >
+Instruction.Label = <<Name>: >
 
-LabelRef.LabelRef = <<String>>
+LabelRef.LabelRef = <<Name>>

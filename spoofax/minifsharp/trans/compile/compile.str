@@ -47,7 +47,7 @@ rules
 		
 	program-to-cil: Program(e,l@Let(_,a,b,c,d)) -> result with
 		wildcardVars := <getNamedWildcars;map(nabl2-get-ast-type; strip-forall; type-to-cil)> d; 
-		result       := ProgramCil(<concat> [[Method(IntType(), a, None(), [], LocalDefs(wildcardVars), <exprBlock-to-cil> (d, (l, [])))], <nonEntryPoints-to-cil> e], a)
+		result       := ProgramCil(<concat> [[Method(StaticMethod(), IntType(), <getFuncName>a, None(), [], LocalDefs(wildcardVars), <exprBlock-to-cil> (d, (l, [])))], <nonEntryPoints-to-cil> e], <getFuncName> a)
 		 
 	nonEntryPoints-to-cil: None() -> []
 	nonEntryPoints-to-cil: Some(x) -> <listifyExprBlock; map(definitions-to-cil); concat> x
@@ -110,7 +110,7 @@ rules
 		freeVars     := <getFreeVars> targetFunc;
 		loadFreeVars := <mapconcat(\x->(x, context)\;exp-to-cil)> freeVars;
 		freeVarTys   := <map(nabl2-get-ast-type; type-to-cil)> freeVars;
-		constName    := <concat-strings> ["get_", name];
+		constName    := <getFuncName> name;
 		call		 := [Call(Static(), <type-to-cil> constTy, ClassType(DefaultModule(), ClassName("Test1"), NonGeneric()), constName, None(), freeVarTys)] ;
 		result       := <concat> [
 			loadFreeVars,
@@ -182,7 +182,7 @@ rules
 		freeVarTypes := <map(nabl2-get-ast-type; strip-forall; type-to-cil)> freeVars;
 		allArgTypes  := <concat>  [argTypes, freeVarTypes];
 		wildcardVars := <getNamedWildcars;map(nabl2-get-ast-type; strip-forall; type-to-cil)> body; 
-		method 		 := Method(returnType, name, genericTypes, allArgTypes, LocalDefs(wildcardVars), <exprBlock-to-cil> (body, (a, [])));
+		method 		 := Method(StaticMethod(), returnType, <getFuncName> name, genericTypes, allArgTypes, LocalDefs(wildcardVars), <exprBlock-to-cil> (body, (a, [])));
 		curriedFunc  := <curriedFunction-to-cil> (tmp, tmp, name, [], args, freeVars);
 		result 	 	 := <concat> [[method], curriedFunc, <listifyExprBlock;mapconcat(definitions-to-cil)> body]
 		
@@ -193,7 +193,7 @@ rules
 		freeVars 	 := <getFreeVars> a;
 		freeVarTypes := <map(nabl2-get-ast-type; strip-forall; type-to-cil)> freeVars;
 		wildcardVars := <getNamedWildcars;map(nabl2-get-ast-type; strip-forall; type-to-cil)> body; 
-		method 		 := Method(returnType, name, genericTypes, freeVarTypes, LocalDefs(wildcardVars), <exprBlock-to-cil> (body, (a, [])));
+		method 		 := Method(StaticMethod(), returnType, <getFuncName> name, genericTypes, freeVarTypes, LocalDefs(wildcardVars), <exprBlock-to-cil> (body, (a, [])));
 		curriedFunc  := <curriedFunction-to-cil> (tmp, tmp, name, [], [], freeVars);
 		result 	 	 := <concat> [[method], curriedFunc, <listifyExprBlock;mapconcat(definitions-to-cil)> body]
 
@@ -215,33 +215,35 @@ rules
 			Ldc("1"),
 			Ret()
 		];
-		baseClass  := UnionClass(name, None(), [Field(IntType(), "Tag")], DefaultCtor(), IntType(), typeCmp);
+		cmpFunc    := Method(InstanceMethod(), BoolType(), "EqualTypes", None(), [IntType()], LocalDefs([]), typeCmp);
+		baseClass  := Class(name, None(), NoBaseClass(), [Field(IntType(), "Tag")], Ctor([], []), [cmpFunc]);
 		subclasses := <number(id); mapconcat(\(typedId, idx) -> <unionSubclass-to-cil> (typedId, idx, classTy)\)> l;
 		result     := <concat>[[baseClass], subclasses]
 	
 	definitions-to-cil: _ -> []
 	
 	unionSubclass-to-cil: (TypeConstIdentifier(name), idx, parent) -> result with
-		varTyCil := <localClass> name;
-		ctorBody := <concat>[
+		varTyCil   := <localClass> name;
+		ctorBody   := <concat>[
 			<generateBaseInit> parent,
 			[LoadArg("0"), Ldc(<int-to-string> idx), StoreField(IntType(), parent, "Tag")]			
 		];
-		ctor     := Ctor([], ctorBody);
-		cmpBody  := [Ldc(<int-to-string> idx)];
-		result   := [UnionSubtypeClass(name, None(), parent, [], ctor, cmpBody)]
+		ctor       := Ctor([], ctorBody);
+		getTagFunc := Method(StaticMethod(), IntType(), "GetTag", None(), [], LocalDefs([]), [Ldc(<int-to-string> idx)]);
+		result     := [Class(name, None(), BaseClass(parent), [], ctor, [getTagFunc])]
+
 				
 	unionSubclass-to-cil: (TypedID(name, ty), idx, parent) -> result with 
-		cilTy    := < nabl2-get-ast-type; type-to-cil> ty;
-		varTyCil := <localClass> name;
-		ctorBody := <concat>[
+		cilTy      := < nabl2-get-ast-type; type-to-cil> ty;
+		varTyCil   := <localClass> name;
+		ctorBody   := <concat>[
 			<generateBaseInit> parent,
 			<generateFieldInit> ("1", name, [Param(cilTy, "Value")]),
 			[LoadArg("0"), Ldc(<int-to-string> idx), StoreField(IntType(), parent, "Tag")]			
 		];
-		ctor    := Ctor([Param(cilTy, "x")], ctorBody);
-		cmpBody := [Ldc(<int-to-string> idx)];
-		result  := [UnionSubtypeClass(name, None(), parent, [Field(cilTy, "Value")], ctor, cmpBody)]
+		ctor       := Ctor([Param(cilTy, "x")], ctorBody);
+		getTagFunc := Method(StaticMethod(), IntType(), "GetTag", None(), [], LocalDefs([]), [Ldc(<int-to-string> idx)]);
+		result     := [Class(name, None(), BaseClass(parent), [Field(cilTy, "Value")], ctor, [getTagFunc])]
 
 	
 
@@ -258,16 +260,14 @@ rules
 		freeVarFields:= <map(generateField; \Field(a,b) -> Field(a, <getFreeVarName> b)\)> freeVars;
 		allFields    := <concat> [argFields, freeVarFields];
 		ctor 		 := <generateConstructor> (funcName, processedArgs, baseClass, freeVars);
-		retTy 		 := <type-to-cil> y;
-		argTy        := <type-to-cil> x;
-		instructions := <generateInvokeImplementation> (funTy, name, processedArgs, nextArgs, freeVars);
-		genericVars  := <getOptionalGenericVars> funTy;
-		function     := FunctionDefinition(funcName, genericVars, baseClass, allFields, ctor, retTy, argTy, instructions);
+		invokeImpl   := <generateInvokeImplementation> (funTy, <type-to-cil> y, <type-to-cil> x, name, processedArgs, nextArgs, freeVars);
+		genericVars  := <getOptionalGenericVars> funTy;		
+		function     := Class(funcName, genericVars, BaseClass(baseClass), allFields, ctor, [invokeImpl]);
 		nextFunction := <curriedFunction-to-cil> (funTy, y, name, <concat> [processedArgs, [argHd]], argTl, freeVars);
 		result 		 := <concat> [[function], nextFunction] 
 	
 	// call the next object in the chain. For the last object in the chain, call the actual function.
-	generateInvokeImplementation: (funTy, className, processed, nextArgs@[nextArg|_], freeVars) -> result with
+	generateInvokeImplementation: (funTy, retTy, argTy, className, processed, nextArgs@[nextArg|_], freeVars) -> result with
 		objName         := <concat-strings> [className, "_", <length;int-to-string> processed];
 		loadCurriedArgs := <loadFields> (processed, funTy, objName);
 		loadFreeVars    := <loadFreeVars> (<concat-strings> [className, "_", <length;int-to-string> processed], freeVars);
@@ -275,17 +275,18 @@ rules
 		freeVarTys      := <map(nabl2-get-ast-type;type-to-cil)> freeVars;
 		tys             := <concat> [argTys, freeVarTys];
 		if <lt> (<length>nextArgs, 2) then 
-			funcName    := <concat-strings> ["get_", className];
+			funcName    := <getFuncName> className;
 			callNext    := [Call(Static(), <ret-type-to-cil> (funTy, <length>tys), ClassType(DefaultModule(), ClassName("Test1"), NonGeneric()), funcName, None(), tys), Ret()] 
 		else 
 			callNext    := [NewObj(<concat-strings;localClass> [className, "_", <addS> ("1", <length;int-to-string> processed)], tys)]
 		end;
-		result          := <concat> [
+		instructions    := <concat> [
 			loadCurriedArgs,
 			[LoadArg("1")],
 			loadFreeVars,
 			callNext
-	 	]
+	 	];
+	 	result          := Method(InstanceMethod(), retTy, "Invoke", None(), [argTy], LocalDefs([]), instructions)
 	 	
 	loadField: (processed, funTy, className, identifierName) -> result with 
 		fldType := <arg-type-to-cil> (funTy,identifierName, processed);

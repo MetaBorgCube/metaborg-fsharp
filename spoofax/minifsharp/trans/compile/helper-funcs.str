@@ -75,6 +75,7 @@ rules
 		result 	   := <indexOf> (varOrigins, varOrigin, 0)
 	
 	getFreeVarName: x -> <concat-strings> ["freevar_", x]
+	getFuncName:    x -> <concat-strings> ["func_", x]
 	
 	localClass: name -> ClassType(DefaultModule(), ClassName(<concat-strings> ["Test1/", name]), NonGeneric())
 	
