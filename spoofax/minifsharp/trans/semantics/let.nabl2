@@ -16,27 +16,25 @@ rules
 
 	// Let Rules
 
-  	[[ a@Let(NonRecursive(), id, args, retTy, body) ^ (s, s') : argCurried2 ]] := 
+  	[[ a@Let(NonRecursive(), id, args, retTy, body) ^ (s, s') : ty /* WAS: genOf argCurried */ ]] := 
 		GetSpecifiedRetTy [[ retTy ^ (s_body) : ty ]],
 		new s_body, 
 		s_body -P-> s,
 	    InnerExprBlock[[ body ^ (s_body, _, _) : ty]],
 	    MapCurry [[ args ^ (s_body, ty) : argCurried ]],
-	    argCurried2 genOf(vars) argCurried,
+	    Const{id} genOf argCurried,
 		Const{id}.origin := a, 
-		Const{id} <- s',
-		Const{id} : argCurried2.
+		Const{id} <- s'.
 
-  	[[ a@Let(Recursive(), id, args, retTy, body) ^ (s, _) : argCurried2 ]] := 
+  	[[ a@Let(Recursive(), id, args, retTy, body) ^ (s, _) : retTyp /* WAS: genOf argCurried */ ]] := 
     	GetSpecifiedRetTy [[ retTy ^ (s_body) : retTyp ]],
     	new s_body, 
     	s_body -P-> s,	
 	    InnerExprBlock[[ body ^ (s_body, _, _) : retTyp]],
 		MapCurry [[ args ^ (s_body, retTyp) : argCurried ]],
-		argCurried2 genOf(vars) argCurried,
+		Const{id} genOf argCurried,
 		Const{id}.origin := a, 
-		Const{id} <- s,
-		Const{id} : argCurried2.
+		Const{id} <- s.
     
   	[[ a@LetConst(id, retTy, body) ^ (s, s') : ty ]] := 
 		GetSpecifiedRetTy [[ retTy ^ (s_body) : ty ]],

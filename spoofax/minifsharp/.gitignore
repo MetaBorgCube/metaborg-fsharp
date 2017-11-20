@@ -8,3 +8,8 @@ example.*
 /.classpath
 /.project
 /.settings
+
+*.constraints
+*.scope-graph
+*.unifier
+*.name-resolution
