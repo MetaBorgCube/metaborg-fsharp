@@ -1,0 +1,19 @@
+let rec map f xs = match xs with 
+    | [] -> []
+    | x :: ys -> f x :: map f ys
+    
+let l = [1; 2; 3]
+
+let inc x = x + 1
+let isZero x = if (x = 0) then true else false
+
+let m = map inc l
+let n = map isZero l
+
+//let m = true
+let x = m && false
+
+[<EntryPoint>]
+
+let r = 1
+
