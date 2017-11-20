@@ -16,7 +16,7 @@ rules
 
     // Match Rules
     
-    [[ Match(id, rules) ^ (s) : ty ]] :=
+  [[ Match(id, rules) ^ (s) : ty ]] :=
     	[[ id ^ (s) : idType ]],
     	Map2UT [[ rules ^ (s, idType) : ty ]].
     	

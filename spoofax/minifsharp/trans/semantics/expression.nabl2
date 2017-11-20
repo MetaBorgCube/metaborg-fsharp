@@ -19,7 +19,7 @@ rules
   	[[ Identifier(id) ^ (s) : ty]] :=
 	  	Const{id} -> s, 
 	  	Const{id} |-> d,
-	  	d : ty.
+	  	ty instOf d. // always instantiate identifier
 	
   	[[ TypeConstIdentifier(id) ^ (s) : ty]] :=
 	  	Const{id} -> s, 
@@ -38,12 +38,14 @@ rules
 
 	// Application type rules
 
-	[[ Application(Identifier(id), e2) ^ (s) : funcRetTy ]] := 
-	  	Const{id} -> s, 
-	  	Const{id} |-> d,
-	    ty2 instOf d,
-	    ty2 == Function(argTy, funcRetTy),
-	    [[ e2 ^ (s) : argTy ]].
+// this rule is too specific; variables can always be instantiated
+
+//	[[ Application(Identifier(id), e2) ^ (s) : funcRetTy ]] := 
+//	  	Const{id} -> s, 
+//	  	Const{id} |-> d,
+//	    ty2 instOf d,
+//	    ty2 == Function(argTy, funcRetTy),
+//	    [[ e2 ^ (s) : argTy ]].
   
   	[[ Application(e1, e2) ^ (s) : funcRetTy ]] := 
 	    [[ e1 ^ (s) : Function(argTy, funcRetTy) ]],
