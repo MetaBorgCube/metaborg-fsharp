@@ -46,8 +46,7 @@ rules
 	Pattern [[ TypeConstruct(id, arg) ^ (s) : funcRetTy ]] :=
 		Const{id} -> s, 
 	  	Const{id} |-> d,
-	  	d : constructTy,
-	    ty2 instOf constructTy,
+	    ty2 instOf d,
 	    Pattern [[ arg ^ (s) : argTy ]],
 	    ty2 == Function(argTy, funcRetTy).
 	

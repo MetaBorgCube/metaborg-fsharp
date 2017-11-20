@@ -38,9 +38,10 @@ rules
 
 	// Application type rules
 
-	[[ Application(x@Identifier(_), e2) ^ (s) : funcRetTy ]] := 
-	    [[ x ^ (s) : ty ]],
-	    ty2 instOf ty,
+	[[ Application(Identifier(id), e2) ^ (s) : funcRetTy ]] := 
+	  	Const{id} -> s, 
+	  	Const{id} |-> d,
+	    ty2 instOf d,
 	    ty2 == Function(argTy, funcRetTy),
 	    [[ e2 ^ (s) : argTy ]].
   
